@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="120" height="40" viewBox="0 0 120 40" xmlns="http://www.w3.org/2000/svg">
+  <!-- Entry gate base -->
+  <rect x="5" y="5" width="110" height="30" rx="4" ry="4" fill="#8B4513" stroke="#654321" stroke-width="2"/>
+  <rect x="8" y="8" width="104" height="24" rx="3" ry="3" fill="#D2691E"/>
+  
+  <!-- Gate posts -->
+  <rect x="10" y="0" width="8" height="40" rx="2" ry="2" fill="#654321"/>
+  <rect x="102" y="0" width="8" height="40" rx="2" ry="2" fill="#654321"/>
+  
+  <!-- Gate opening -->
+  <rect x="25" y="12" width="70" height="16" rx="2" ry="2" fill="none" stroke="#654321" stroke-width="1" stroke-dasharray="3,3"/>
+  
+  <!-- Entry arrow -->
+  <polygon points="30,20 45,14 45,17 55,17 55,23 45,23 45,26" fill="#228B22" stroke="#1F5F1F" stroke-width="1"/>
+  
+  <!-- Directional indicators -->
+  <polygon points="65,18 75,20 65,22" fill="#228B22"/>
+  <polygon points="75,18 85,20 75,22" fill="#228B22"/>
+  
+  <!-- Entry label -->
+  <rect x="35" y="2" width="50" height="8" rx="2" ry="2" fill="#F5F5DC"/>
+  <text x="60" y="7.5" text-anchor="middle" font-family="Arial, sans-serif" font-size="6" fill="#228B22">ENTRY</text>
+</svg>
