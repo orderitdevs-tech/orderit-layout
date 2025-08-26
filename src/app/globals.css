@@ -170,3 +170,74 @@
   -ms-user-select: none;
   user-select: none;
 }
+
+/* Custom color utilities */
+.bg-primary {
+  background-color: var(--primary);
+}
+.bg-primary-light {
+  background-color: color-mix(in srgb, var(--primary) 10%, transparent);
+}
+.bg-primary-lighter {
+  background-color: color-mix(in srgb, var(--primary) 5%, transparent);
+}
+.text-primary {
+  color: var(--primary);
+}
+.border-primary {
+  border-color: var(--primary);
+}
+.hover\:bg-primary:hover {
+  background-color: var(--primary);
+}
+.hover\:text-primary:hover {
+  color: var(--primary);
+}
+.hover\:border-primary:hover {
+  border-color: var(--primary);
+}
+
+.bg-secondary {
+  background-color: var(--secondary);
+}
+.bg-secondary-light {
+  background-color: color-mix(in srgb, var(--secondary) 10%, transparent);
+}
+.bg-secondary-lighter {
+  background-color: color-mix(in srgb, var(--secondary) 5%, transparent);
+}
+.text-secondary {
+  color: var(--secondary);
+}
+.border-secondary {
+  border-color: var(--secondary);
+}
+.hover\:bg-secondary:hover {
+  background-color: var(--secondary);
+}
+.hover\:text-secondary:hover {
+  color: var(--secondary);
+}
+.hover\:border-secondary:hover {
+  border-color: var(--secondary);
+}
+
+.bg-accent {
+  background-color: var(--accent);
+}
+.text-accent-fg {
+  color: var(--accent-foreground);
+}
+.border-accent {
+  border-color: var(--accent);
+}
+
+.bg-custom {
+  background-color: var(--background);
+}
+.text-custom {
+  color: var(--text);
+}
+.border-custom {
+  border-color: color-mix(in srgb, var(--text) 20%, transparent);
+}

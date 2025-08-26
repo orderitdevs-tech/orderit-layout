@@ -1,17 +1,126 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import {
   Move,
   MousePointer,
-  RotateCw,
   Plus,
   Save,
   FolderOpen,
   Layers,
+  Edit3,
+  Trash2,
+  Check,
+  X,
 } from "lucide-react";
 import { useRestaurant } from "../context/RestaurantContext";
 import { TABLE_CONFIGS } from "../utils/tableConfig";
+import { Floor } from "../types/restaurant";
+
+interface PlaceItemProps {
+  floor: Floor;
+  isActive: boolean;
+  onSwitch: () => void;
+  onRename: (newName: string) => void;
+  onDelete: () => void;
+  canDelete: boolean;
+}
+
+function PlaceItem({
+  floor,
+  isActive,
+  onSwitch,
+  onRename,
+  onDelete,
+  canDelete,
+}: PlaceItemProps) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editName, setEditName] = useState(floor.name);
+
+  const handleSave = () => {
+    if (editName.trim()) {
+      onRename(editName.trim());
+      setIsEditing(false);
+    }
+  };
+
+  const handleCancel = () => {
+    setEditName(floor.name);
+    setIsEditing(false);
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      handleSave();
+    } else if (e.key === "Escape") {
+      handleCancel();
+    }
+  };
+
+  if (isEditing) {
+    return (
+      <div className="flex items-center gap-1 p-2 bg-primary-light border border-primary rounded-md">
+        <Layers size={14} className="text-primary flex-shrink-0" />
+        <input
+          type="text"
+          value={editName}
+          onChange={(e) => setEditName(e.target.value)}
+          onKeyDown={handleKeyPress}
+          className="flex-1 px-2 py-1 text-sm border border-custom rounded text-custom focus:outline-none focus:ring-2 focus:ring-primary"
+          autoFocus
+        />
+        <button
+          onClick={handleSave}
+          className="p-1 text-primary hover:bg-primary-lighter rounded"
+          title="Save"
+        >
+          <Check size={12} />
+        </button>
+        <button
+          onClick={handleCancel}
+          className="p-1 text-custom hover:bg-accent rounded"
+          title="Cancel"
+        >
+          <X size={12} />
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className={`flex items-center gap-1 p-2 rounded-md text-sm transition-colors ${
+        isActive
+          ? "bg-primary-light text-primary border border-primary"
+          : "bg-accent text-custom hover:bg-primary-lighter border border-custom"
+      }`}
+    >
+      <button
+        onClick={onSwitch}
+        className="flex items-center gap-2 flex-1 text-left"
+      >
+        <Layers size={14} />
+        <span className="truncate">{floor.name}</span>
+      </button>
+      <button
+        onClick={() => setIsEditing(true)}
+        className="p-1 opacity-60 hover:text-primary hover:bg-primary-lighter hover:opacity-100 rounded transition-all"
+        title="Rename"
+      >
+        <Edit3 size={12} />
+      </button>
+      {canDelete && (
+        <button
+          onClick={onDelete}
+          className="p-1 opacity-60 hover:text-secondary hover:bg-secondary-lighter hover:opacity-100 rounded transition-all"
+          title="Delete"
+        >
+          <Trash2 size={12} />
+        </button>
+      )}
+    </div>
+  );
+}
 
 interface ToolbarProps {
   onAddFloor: () => void;
@@ -44,14 +153,13 @@ export default function Toolbar({
   const tools = [
     { id: "select", icon: MousePointer, label: "Select" },
     { id: "pan", icon: Move, label: "Pan" },
-    { id: "rotate", icon: RotateCw, label: "Rotate" },
   ] as const;
 
   return (
-    <div className="bg-white border-r border-gray-200 w-64 h-full flex flex-col">
+    <div className="bg-custom border-r border-custom w-64 h-full flex flex-col">
       {/* Tools Section */}
-      <div className="p-4 border-b border-gray-200">
-        <h3 className="text-sm font-semibold text-gray-700 mb-3">Tools</h3>
+      <div className="p-4 border-b border-custom">
+        <h3 className="text-sm font-semibold text-custom mb-3">Tools</h3>
         <div className="flex gap-1">
           {tools.map((tool) => {
             const Icon = tool.icon;
@@ -63,8 +171,8 @@ export default function Toolbar({
                 }
                 className={`p-2 rounded-md border transition-colors ${
                   state.tool === tool.id
-                    ? "bg-blue-100 border-blue-300 text-blue-700"
-                    : "bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100"
+                    ? "bg-primary-light border-primary text-primary"
+                    : "bg-accent border-custom text-custom hover:bg-primary-lighter"
                 }`}
                 title={tool.label}
               >
@@ -75,77 +183,66 @@ export default function Toolbar({
         </div>
       </div>
 
-      {/* Tables Section */}
-      <div className="p-4 border-b border-gray-200">
-        <h3 className="text-sm font-semibold text-gray-700 mb-3">Tables</h3>
-        <div className="space-y-2">
-          {Object.entries(TABLE_CONFIGS).map(([type, config]) => {
-            const getItemLabel = (itemType: string) => {
-              if (itemType === "washroom") return "Washroom";
-              if (itemType === "counter") return "Service Counter";
-              if (itemType === "entry-gate") return "Entry Gate";
-              if (itemType === "exit-gate") return "Exit Gate";
-              return `${itemType.replace("table-", "")} Seater Table`;
-            };
-
-            const getIconContent = (itemType: string) => {
-              if (itemType === "washroom") return "🚻";
-              if (itemType === "counter") return "🍴";
-              if (itemType === "entry-gate") return "🚪";
-              if (itemType === "exit-gate") return "🚪";
-              return itemType.split("-")[1];
-            };
-
-            return (
-              <div
-                key={type}
-                draggable
-                onDragStart={(e) =>
-                  handleDragStart(e, type as keyof typeof TABLE_CONFIGS)
-                }
-                className="flex items-center gap-3 p-3 bg-gray-50 rounded-md border border-gray-200 cursor-grab hover:bg-gray-100 transition-colors drag-item no-select"
-              >
-                <div className="w-8 h-8 bg-gray-300 rounded border flex items-center justify-center text-xs font-medium">
-                  {getIconContent(type)}
-                </div>
-                <span className="text-sm text-gray-700 capitalize">
-                  {getItemLabel(type)}
-                </span>
-              </div>
-            );
-          })}
+      {/* Items Section */}
+      <div className="p-4 border-b border-custom max-h-140 overflow-y-auto">
+        <h3 className="text-sm font-semibold text-custom mb-3">Drag Items</h3>
+        <div className="grid grid-cols-2 gap-2">
+          {Object.entries(TABLE_CONFIGS).map(([type, config]) => (
+            <div
+              key={type}
+              draggable
+              onDragStart={(e) =>
+                handleDragStart(e, type as keyof typeof TABLE_CONFIGS)
+              }
+              className="aspect-square bg-gradient-to-br from-accent to-primary-lighter rounded-lg border border-custom cursor-grab hover:from-primary-lighter hover:to-primary-light hover:shadow-md hover:border-primary transition-all duration-200 drag-item no-select flex items-center justify-center p-2"
+            >
+              <img
+                src={config.image}
+                alt={`${type} preview`}
+                className="w-full h-full object-contain"
+                draggable={false}
+              />
+            </div>
+          ))}
         </div>
       </div>
 
-      {/* Floor Management */}
-      <div className="p-4 border-b border-gray-200">
-        <h3 className="text-sm font-semibold text-gray-700 mb-3">Floors</h3>
+      {/* Places Management */}
+      <div className="p-4 border-b border-custom max-h-60 overflow-y-auto">
+        <h3 className="text-sm font-semibold text-custom mb-3">Places</h3>
         <div className="space-y-2">
           {state.layout.floors.map((floor) => (
-            <button
+            <PlaceItem
               key={floor.id}
-              onClick={() =>
+              floor={floor}
+              isActive={state.layout.currentFloor === floor.id}
+              onSwitch={() =>
                 dispatch({
                   type: "SWITCH_FLOOR",
                   payload: { floorId: floor.id },
                 })
               }
-              className={`w-full text-left p-2 rounded-md text-sm transition-colors ${
-                state.layout.currentFloor === floor.id
-                  ? "bg-blue-100 text-blue-700 border border-blue-300"
-                  : "bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-200"
-              }`}
-            >
-              <Layers size={14} className="inline mr-2" />
-              {floor.name}
-            </button>
+              onRename={(newName) =>
+                dispatch({
+                  type: "RENAME_FLOOR",
+                  payload: { floorId: floor.id, name: newName },
+                })
+              }
+              onDelete={() =>
+                dispatch({
+                  type: "DELETE_FLOOR",
+                  payload: { floorId: floor.id },
+                })
+              }
+              canDelete={state.layout.floors.length > 1}
+            />
           ))}
           <button
             onClick={onAddFloor}
-            className="w-full p-2 rounded-md text-sm bg-green-50 text-green-700 border border-green-200 hover:bg-green-100 transition-colors"
+            className="w-full p-2 rounded-md text-sm bg-primary-light text-primary border border-primary hover:bg-primary-lighter transition-colors"
           >
             <Plus size={14} className="inline mr-2" />
-            Add Floor
+            Add Place
           </button>
         </div>
       </div>
@@ -155,14 +252,14 @@ export default function Toolbar({
         <div className="space-y-2">
           <button
             onClick={onSaveLayout}
-            className="w-full p-2 rounded-md text-sm bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 transition-colors"
+            className="w-full p-2 rounded-md text-sm bg-primary-light text-primary border border-primary hover:bg-primary hover:text-white transition-colors"
           >
             <Save size={14} className="inline mr-2" />
             Save Layout
           </button>
           <button
             onClick={onLoadLayout}
-            className="w-full p-2 rounded-md text-sm bg-gray-50 text-gray-700 border border-gray-200 hover:bg-gray-100 transition-colors"
+            className="w-full p-2 rounded-md text-sm bg-accent text-custom border border-custom hover:bg-primary-lighter transition-colors"
           >
             <FolderOpen size={14} className="inline mr-2" />
             Load Layout

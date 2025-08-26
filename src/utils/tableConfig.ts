@@ -31,13 +31,13 @@ export const TABLE_CONFIGS: Record<string, DragItem> = {
     height: 140,
     image: "/tables/table-12.svg",
   },
-  "washroom": {
+  washroom: {
     type: "washroom",
     width: 100,
     height: 80,
     image: "/tables/washroom.svg",
   },
-  "counter": {
+  counter: {
     type: "counter",
     width: 200,
     height: 60,

@@ -81,7 +81,7 @@ function RestaurantLayoutContent() {
   };
 
   return (
-    <div className="h-screen flex bg-gray-50">
+    <div className="h-screen flex bg-custom">
       <Toolbar
         onAddFloor={() => setShowAddFloorModal(true)}
         onSaveLayout={handleSaveLayout}
@@ -90,19 +90,19 @@ function RestaurantLayoutContent() {
 
       <div className="flex-1 flex flex-col">
         {/* Header */}
-        <div className="bg-white border-b border-gray-200 px-6 py-4">
+        <div className="bg-custom border-b border-custom px-6 py-4">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-xl font-semibold text-gray-900">
+              <h1 className="text-xl font-semibold text-custom">
                 {state.layout.name}
               </h1>
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-custom/80">
                 {state.layout.floors.find(
                   (f) => f.id === state.layout.currentFloor
                 )?.name || "No floor selected"}
               </p>
             </div>
-            <div className="text-sm text-gray-500">
+            <div className="text-sm text-custom/60">
               Tables:{" "}
               {state.layout.floors.find(
                 (f) => f.id === state.layout.currentFloor

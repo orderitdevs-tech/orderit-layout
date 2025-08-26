@@ -13,7 +13,7 @@ interface RestaurantState {
   layout: RestaurantLayout;
   selectedTable: string | null;
   isDragging: boolean;
-  tool: "select" | "pan" | "rotate";
+  tool: "select" | "pan";
 }
 
 type RestaurantAction =
@@ -29,7 +29,7 @@ type RestaurantAction =
   | { type: "RENAME_FLOOR"; payload: { floorId: string; name: string } }
   | { type: "DELETE_FLOOR"; payload: { floorId: string } }
   | { type: "SET_DRAGGING"; payload: { isDragging: boolean } }
-  | { type: "SET_TOOL"; payload: { tool: "select" | "pan" | "rotate" } }
+  | { type: "SET_TOOL"; payload: { tool: "select" | "pan" } }
   | { type: "LOAD_LAYOUT"; payload: { layout: RestaurantLayout } };
 
 const initialFloor: Floor = {

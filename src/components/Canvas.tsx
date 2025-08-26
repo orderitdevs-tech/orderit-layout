@@ -138,6 +138,7 @@ export default function Canvas({ width, height }: CanvasProps) {
   const [stageScale, setStageScale] = useState(1);
   const [isDragOver, setIsDragOver] = useState(false);
   const [dragCounter, setDragCounter] = useState(0);
+  const [isHoldScrollActive, setIsHoldScrollActive] = useState(false);
 
   const tables = getCurrentFloorTables();
 
@@ -287,9 +288,26 @@ export default function Canvas({ width, height }: CanvasProps) {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [state.selectedTable, dispatch]);
 
+  // Reset view to defaults
+  const resetView = useCallback(() => {
+    setStageScale(1);
+    setStagePos({ x: 0, y: 0 });
+    const stage = stageRef.current?.getStage?.();
+    if (stage) {
+      stage.scale({ x: 1, y: 1 });
+      stage.position({ x: 0, y: 0 });
+      stage.batchDraw();
+    }
+  }, []);
+
+  // Toggle hold scroll mode
+  const toggleHoldScroll = useCallback(() => {
+    setIsHoldScrollActive((prev) => !prev);
+  }, []);
+
   return (
     <div
-      className="bg-gray-100 relative overflow-hidden"
+      className="bg-custom relative overflow-hidden"
       style={{ width, height }}
       onDrop={(e) => {
         handleDrop(e);
@@ -323,7 +341,7 @@ export default function Canvas({ width, height }: CanvasProps) {
         y={stagePos.y}
         scaleX={stageScale}
         scaleY={stageScale}
-        draggable={state.tool === "pan" && !isDragOver}
+        draggable={(isHoldScrollActive || state.tool === "pan") && !isDragOver}
         onClick={handleStageClick}
         onTap={handleStageClick}
         onWheel={handleWheel}
@@ -376,9 +394,41 @@ export default function Canvas({ width, height }: CanvasProps) {
         </Layer>
       </Stage>
 
-      {/* Canvas Info */}
-      <div className="absolute top-4 right-4 bg-white p-2 rounded-md shadow-sm text-xs text-gray-600">
-        Zoom: {Math.round(stageScale * 100)}% | Tool: {state.tool}
+      {/* Canvas Controls */}
+      <div className="absolute top-4 right-4 flex flex-col gap-2">
+        {/* Canvas Info */}
+        <div className="bg-accent/90 backdrop-blur px-2.5 py-1.5 rounded-full shadow-sm text-xs text-custom border border-primary/20">
+          Zoom: {Math.round(stageScale * 100)}% | Tool: {state.tool}
+        </div>
+
+        {/* Control Buttons */}
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={toggleHoldScroll}
+            className={`px-3 py-1.5 rounded-full text-xs backdrop-blur border border-primary/20 hover:bg-accent shadow-sm transition-colors ${
+              isHoldScrollActive
+                ? "bg-primary text-white border-primary"
+                : "bg-accent/90 text-custom"
+            }`}
+            title={
+              isHoldScrollActive
+                ? "Click to disable canvas dragging"
+                : "Click to enable canvas dragging with any tool"
+            }
+          >
+            {isHoldScrollActive ? "Drag ON" : "Hold Drag"}
+          </button>
+
+          <button
+            type="button"
+            onClick={resetView}
+            className="px-3 py-1.5 rounded-full text-xs bg-accent/90 backdrop-blur text-custom border border-primary/20 hover:bg-accent shadow-sm transition-colors"
+            title="Reset view position and zoom"
+          >
+            Reset
+          </button>
+        </div>
       </div>
 
       {/* Drag Over Indicator (non-layout-affecting overlay) */}
