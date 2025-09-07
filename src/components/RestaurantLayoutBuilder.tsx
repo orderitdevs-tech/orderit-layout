@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   RestaurantProvider,
   useRestaurant,
@@ -11,8 +11,15 @@ import PropertiesPanel from "./PropertiesPanel";
 import AddFloorModal from "./AddFloorModal";
 import HelpTooltip from "./HelpTooltip";
 
+// Touch drag interface
+interface TouchDragConfig {
+  type: string;
+  tableType: any;
+  config: any;
+}
+
 function RestaurantLayoutContent() {
-  const { state, dispatch } = useRestaurant();
+  const { state, dispatch, exportLayoutWithDimensions } = useRestaurant();
   const [canvasSize, setCanvasSize] = useState({ width: 800, height: 600 });
   const [showAddFloorModal, setShowAddFloorModal] = useState(false);
 
@@ -42,13 +49,13 @@ function RestaurantLayoutContent() {
   };
 
   const handleSaveLayout = () => {
-    const layoutData = JSON.stringify(state.layout, null, 2);
+    const layoutData = JSON.stringify(exportLayoutWithDimensions(), null, 2);
     const blob = new Blob([layoutData], { type: "application/json" });
     const url = URL.createObjectURL(blob);
 
     const a = document.createElement("a");
     a.href = url;
-    a.download = `${state.layout.name.replace(/\s+/g, "_")}_layout.json`;
+    a.download = `${state.layout.name.replace(/\s+/g, "_")}_layout_v${state.layout.floorDimensions ? '1.1' : '1.0'}.json`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -67,7 +74,19 @@ function RestaurantLayoutContent() {
         reader.onload = (event) => {
           try {
             const layout = JSON.parse(event.target?.result as string);
-            dispatch({ type: "LOAD_LAYOUT", payload: { layout } });
+            
+            // Handle both old and new layout formats
+            if (layout.version === "1.1" || layout.floorDimensions) {
+              dispatch({ type: "LOAD_LAYOUT", payload: { layout } });
+            } else {
+              // Old format - add default floor dimensions
+              const updatedLayout = {
+                ...layout,
+                floorDimensions: { width: 1600, height: 1200 },
+                version: "1.1"
+              };
+              dispatch({ type: "LOAD_LAYOUT", payload: { layout: updatedLayout } });
+            }
           } catch (error) {
             alert("Error loading layout file. Please check the file format.");
             console.error("Error parsing layout:", error);
@@ -80,27 +99,47 @@ function RestaurantLayoutContent() {
     input.click();
   };
 
+  const canvasHandlerRef = useRef<((config: any, position: { x: number; y: number }) => void) | null>(null);
+
+  const handleCanvasTouchDropReady = useCallback((handler: (config: any, position: { x: number; y: number }) => void) => {
+    canvasHandlerRef.current = handler;
+  }, []);
+
+  const handleTouchDrop = useCallback((config: TouchDragConfig, clientPosition: { x: number; y: number }) => {
+    if (canvasHandlerRef.current) {
+      canvasHandlerRef.current(config, clientPosition);
+    }
+  }, []);
+
   return (
     <div className="h-screen flex bg-custom">
       <Toolbar
         onAddFloor={() => setShowAddFloorModal(true)}
         onSaveLayout={handleSaveLayout}
         onLoadLayout={handleLoadLayout}
+        onTouchDrop={handleTouchDrop}
       />
 
       <div className="flex-1 flex flex-col">
-        {/* Header */}
+        {/* Header with improved floor dimension display */}
         <div className="bg-custom border-b border-custom px-6 py-4">
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-xl font-semibold text-custom">
                 {state.layout.name}
               </h1>
-              <p className="text-sm text-custom/80">
-                {state.layout.floors.find(
-                  (f) => f.id === state.layout.currentFloor
-                )?.name || "No floor selected"}
-              </p>
+              <div className="flex items-center gap-4 mt-1">
+                <p className="text-sm text-custom/80">
+                  {state.layout.floors.find(
+                    (f) => f.id === state.layout.currentFloor
+                  )?.name || "No floor selected"}
+                </p>
+                {state.layout.floorDimensions && (
+                  <span className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded font-mono">
+                    Floor: {state.layout.floorDimensions.width}×{state.layout.floorDimensions.height}px
+                  </span>
+                )}
+              </div>
             </div>
             <div className="text-sm text-custom/60">
               Tables:{" "}
@@ -116,6 +155,7 @@ function RestaurantLayoutContent() {
           <DynamicCanvasWrapper
             width={canvasSize.width}
             height={canvasSize.height}
+            onTouchDropReady={handleCanvasTouchDropReady}
           />
           <PropertiesPanel />
         </div>

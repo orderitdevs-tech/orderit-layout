@@ -29,13 +29,13 @@ export const TABLE_CONFIGS: Record<string, DragItem> = {
     type: "table-12",
     width: 180,
     height: 140,
-    image: "/tables/table-12.svg",
+    image: "/tables/table_12.svg",
   },
   washroom: {
     type: "washroom",
     width: 100,
     height: 80,
-    image: "/tables/washroom.svg",
+    image: "/tables/washroom_icon.svg",
   },
   counter: {
     type: "counter",
@@ -45,15 +45,15 @@ export const TABLE_CONFIGS: Record<string, DragItem> = {
   },
   "entry-gate": {
     type: "entry-gate",
-    width: 120,
-    height: 40,
-    image: "/tables/entry-gate.svg",
+    width: 80,
+    height: 100,
+    image: "/tables/entry_icon.svg",
   },
   "exit-gate": {
     type: "exit-gate",
-    width: 120,
-    height: 40,
-    image: "/tables/exit-gate.svg",
+    width: 80,
+    height: 100,
+    image: "/tables/exit_gate_icon.svg",
   },
 };
 
