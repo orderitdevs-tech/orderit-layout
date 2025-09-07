@@ -58,10 +58,11 @@ export const TABLE_CONFIGS: Record<string, DragItem> = {
 };
 
 export const TABLE_STATUS_COLORS: Record<TableStatus, string> = {
-  free: "#22c55e", // green
-  occupied: "#ef4444", // red
-  reserved: "#f59e0b", // yellow
+  free: "#22c55e",        // green
+  occupied: "#ef4444",    // red
+  reserved: "#f59e0b",    // yellow
   maintenance: "#6b7280", // gray
+  "out-of-service": "#9333ea", // purple
 };
 
 export const generateTableId = (): string => {

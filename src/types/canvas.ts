@@ -1,15 +1,6 @@
 // types/restaurant.ts
-export interface TableItem {
-    id: string;
-    type: string;
-    x: number;
-    y: number;
-    rotation: number;
-    status: 'free' | 'occupied' | 'reserved' | 'maintenance';
-    width: number;
-    height: number;
-    tableNumber?: string;
-}
+
+import { TableItem } from "./restaurant";
 
 export interface FloorDimensions {
     width: number;

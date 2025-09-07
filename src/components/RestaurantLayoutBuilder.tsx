@@ -10,6 +10,7 @@ import DynamicCanvasWrapper from "./DynamicCanvas";
 import PropertiesPanel from "./PropertiesPanel";
 import AddFloorModal from "./AddFloorModal";
 import HelpTooltip from "./HelpTooltip";
+import RestaurantHeader from "./RestaurantHeader";
 
 // Touch drag interface
 interface TouchDragConfig {
@@ -23,15 +24,16 @@ function RestaurantLayoutContent() {
   const [canvasSize, setCanvasSize] = useState({ width: 800, height: 600 });
   const [showAddFloorModal, setShowAddFloorModal] = useState(false);
 
-  // Update canvas size on window resize
+  // Update canvas size on window resize with correct dimensions
   useEffect(() => {
     const updateCanvasSize = () => {
-      const toolbar = 256; // 64 * 4 (w-64 = 16rem = 256px)
-      const properties = 256;
-      const padding = 32;
+      const toolbar = 256; // Toolbar width (w-64 = 256px)
+      const properties = 320; // Properties panel width (w-80 = 320px)  
+      const padding = 32; // General padding
+      const headerHeight = 80; // Header height
 
       const width = window.innerWidth - toolbar - properties - padding;
-      const height = window.innerHeight - 100; // Account for potential header/padding
+      const height = window.innerHeight - headerHeight - padding;
 
       setCanvasSize({
         width: Math.max(600, width),
@@ -74,19 +76,13 @@ function RestaurantLayoutContent() {
         reader.onload = (event) => {
           try {
             const layout = JSON.parse(event.target?.result as string);
-            
-            // Handle both old and new layout formats
-            if (layout.version === "1.1" || layout.floorDimensions) {
-              dispatch({ type: "LOAD_LAYOUT", payload: { layout } });
-            } else {
-              // Old format - add default floor dimensions
-              const updatedLayout = {
-                ...layout,
-                floorDimensions: { width: 1600, height: 1200 },
-                version: "1.1"
-              };
-              dispatch({ type: "LOAD_LAYOUT", payload: { layout: updatedLayout } });
+
+            // Handle layout loading with default floor dimensions if missing
+            if (!layout.floorDimensions) {
+              layout.floorDimensions = { width: 1600, height: 1200 };
             }
+
+            dispatch({ type: "LOAD_LAYOUT", payload: { layout } });
           } catch (error) {
             alert("Error loading layout file. Please check the file format.");
             console.error("Error parsing layout:", error);
@@ -112,55 +108,66 @@ function RestaurantLayoutContent() {
   }, []);
 
   return (
-    <div className="h-screen flex bg-custom">
-      <Toolbar
-        onAddFloor={() => setShowAddFloorModal(true)}
-        onSaveLayout={handleSaveLayout}
-        onLoadLayout={handleLoadLayout}
-        onTouchDrop={handleTouchDrop}
-      />
+    <div className="h-screen w-full flex bg-background">
+      {/* Toolbar - Fixed width */}
+      <div className="w-64 flex-shrink-0">
+        <Toolbar
+          onAddFloor={() => setShowAddFloorModal(true)}
+          onSaveLayout={handleSaveLayout}
+          onLoadLayout={handleLoadLayout}
+          onTouchDrop={handleTouchDrop}
+        />
+      </div>
 
-      <div className="flex-1 flex flex-col">
+      {/* Main content area */}
+      <div className="flex-1 flex flex-col min-w-0">
         {/* Header with improved floor dimension display */}
-        <div className="bg-custom border-b border-custom px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-xl font-semibold text-custom">
-                {state.layout.name}
-              </h1>
-              <div className="flex items-center gap-4 mt-1">
-                <p className="text-sm text-custom/80">
-                  {state.layout.floors.find(
-                    (f) => f.id === state.layout.currentFloor
-                  )?.name || "No floor selected"}
-                </p>
-                {state.layout.floorDimensions && (
-                  <span className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded font-mono">
-                    Floor: {state.layout.floorDimensions.width}×{state.layout.floorDimensions.height}px
-                  </span>
-                )}
-              </div>
-            </div>
-            <div className="text-sm text-custom/60">
-              Tables:{" "}
-              {state.layout.floors.find(
-                (f) => f.id === state.layout.currentFloor
-              )?.tables.length || 0}
-            </div>
-          </div>
-        </div>
+        <RestaurantHeader
+          layout={state.layout}
+          userData={{
+            name: "John Doe",
+            email: "john@restaurant.com",
+            role: "Manager",
+          }}
+          notifications={[
+            {
+              id: "1",
+              title: "New Reservation",
+              description: "Party of 4 at 7:30 PM",
+              time: "2 hours ago",
+              read: false,
+              type: "info"
+            },
+            {
+              id: "2",
+              title: "Table Moved",
+              description: "Table 5 was moved to a new position",
+              time: "1 day ago",
+              read: true,
+              type: "success"
+            }
+          ]}
+        />
 
-        {/* Canvas Area */}
-        <div className="flex-1 flex">
-          <DynamicCanvasWrapper
-            width={canvasSize.width}
-            height={canvasSize.height}
-            onTouchDropReady={handleCanvasTouchDropReady}
-          />
-          <PropertiesPanel />
+        {/* Canvas and Properties Panel Container */}
+        <div className="flex-1 flex min-h-0">
+          {/* Canvas Area - Flexible width */}
+          <div className="flex-1 min-w-0 bg-muted/30">
+            <DynamicCanvasWrapper
+              width={canvasSize.width}
+              height={canvasSize.height}
+              onTouchDropReady={handleCanvasTouchDropReady}
+            />
+          </div>
+
+          {/* Properties Panel - Fixed width */}
+          <div className="w-80 flex-shrink-0">
+            <PropertiesPanel />
+          </div>
         </div>
       </div>
 
+      {/* Modals */}
       <AddFloorModal
         isOpen={showAddFloorModal}
         onClose={() => setShowAddFloorModal(false)}

@@ -18,7 +18,7 @@ import { motion } from "framer-motion";
 
 // Import existing context and utilities
 import { useRestaurant } from "@/context/RestaurantContext";
-import { TableItem, CanvasProps } from "@/types/canvas";
+import { CanvasProps } from "@/types/canvas";
 
 // Import all the new components we created
 import CanvasHeader from './canvas/CanvasHeader';
@@ -30,6 +30,75 @@ import { PerformanceContext } from '../context/PerformanceContext';
 import { useTableManager } from '../hooks/useTableManager';
 import { useResponsiveCanvas } from '../hooks/useResponsiveCanvas';
 import { constrainToCanvas, calculateAutoFit } from '../utils/canvasUtils';
+import { TableItem, TableType } from "@/types/restaurant";
+import { useAtom } from "jotai";
+import { lockAtom } from "@/atom/atom";
+
+// Helper function to determine table type based on component type
+const getTableTypeFromComponentType = (componentType: string): TableType => {
+  switch (componentType) {
+    case "table-2":
+    case "table-4":
+    case "table-6":
+    case "table-8":
+    case "table-12":
+      return "regular";
+    case "counter":
+      return "bar";
+    default:
+      return "regular";
+  }
+};
+
+// Helper function to determine capacity based on component type
+const getCapacityFromComponentType = (componentType: string): number => {
+  switch (componentType) {
+    case "table-2":
+      return 2;
+    case "table-4":
+      return 4;
+    case "table-6":
+      return 6;
+    case "table-8":
+      return 8;
+    case "table-12":
+      return 12;
+    case "counter":
+      return 1;
+    default:
+      return 4;
+  }
+};
+
+// Helper function to generate table number based on type
+const generateTableNumber = (componentType: string, existingTables: TableItem[]): string => {
+  // For dining tables, use T prefix with sequential numbering
+  const diningTableTypes = ["table-2", "table-4", "table-6", "table-8", "table-12"];
+
+  if (diningTableTypes.includes(componentType)) {
+    // Count existing dining tables
+    const diningTables = existingTables.filter(table =>
+      diningTableTypes.includes(table.type)
+    );
+    return `T${diningTables.length + 1}`;
+  }
+
+  // For other components, use component-specific prefixes
+  const componentCounts = existingTables.filter(table => table.type === componentType).length;
+
+  switch (componentType) {
+    case "washroom":
+      return `WR${componentCounts + 1}`;
+    case "counter":
+      return `C${componentCounts + 1}`;
+    case "entry-gate":
+      return `ENTRY${componentCounts + 1}`;
+    case "exit-gate":
+      return `EXIT${componentCounts + 1}`;
+    default:
+      return `${componentType.toUpperCase()}${componentCounts + 1}`;
+  }
+};
 
 export default function EnhancedRestaurantCanvas({ width, height, onTouchDropReady }: CanvasProps) {
   const { state, dispatch, getCurrentFloorTables } = useRestaurant();
@@ -39,7 +108,7 @@ export default function EnhancedRestaurantCanvas({ width, height, onTouchDropRea
   const { getResponsiveHeaderHeight } = useResponsiveCanvas({ width, height });
 
   // Lock state - main new feature
-  const [isLocked, setIsLocked] = useState(false);
+  const [isLocked, setIsLocked] = useAtom(lockAtom);
   const [showSettings, setShowSettings] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
 
@@ -138,6 +207,28 @@ export default function EnhancedRestaurantCanvas({ width, height, onTouchDropRea
     setViewState({ x: newPos.x, y: newPos.y, scale: newScale });
   }, [viewState]);
 
+  // Enhanced table creation function
+  const createNewTable = useCallback((tableType: string, config: any, constrainedPos: { x: number; y: number }) => {
+    const tableNumber = generateTableNumber(tableType, tables);
+    const tableTypeCategory = getTableTypeFromComponentType(tableType);
+    const capacity = getCapacityFromComponentType(tableType);
+
+    const newTable: Omit<TableItem, "id"> = {
+      type: tableType as any,
+      x: constrainedPos.x,
+      y: constrainedPos.y,
+      rotation: 0,
+      status: "free" as const,
+      width: config.width,
+      height: config.height,
+      tableNumber,
+      tableType: tableTypeCategory,
+      capacity,
+      description: undefined,
+    };
+    dispatch({ type: "ADD_TABLE", payload: { table: newTable } });
+  }, [tables, dispatch]);
+
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -156,32 +247,26 @@ export default function EnhancedRestaurantCanvas({ width, height, onTouchDropRea
       const data = JSON.parse(e.dataTransfer.getData("application/json"));
       if (data.type === "TABLE") {
         const config = data.config;
+        const tableType = data.tableType;
+
         if (stageX >= restaurantFloorBounds.x &&
           stageX <= restaurantFloorBounds.x + restaurantFloorBounds.width &&
           stageY >= restaurantFloorBounds.y &&
           stageY <= restaurantFloorBounds.y + restaurantFloorBounds.height) {
+
           const constrainedPos = constrainToCanvas(
             { x: stageX, y: stageY },
             { width: config.width, height: config.height },
             restaurantFloorBounds
           );
-          const newTable = {
-            type: data.tableType,
-            x: constrainedPos.x,
-            y: constrainedPos.y,
-            rotation: 0,
-            status: "free" as const,
-            width: config.width,
-            height: config.height,
-            tableNumber: `T${tables.length + 1}`,
-          };
-          dispatch({ type: "ADD_TABLE", payload: { table: newTable } });
+
+          createNewTable(tableType, config, constrainedPos);
         }
       }
     } catch (error) {
       console.error("Drop parsing error:", error);
     }
-  }, [dispatch, viewState, tables.length, restaurantFloorBounds, isLocked]);
+  }, [dispatch, viewState, restaurantFloorBounds, isLocked, createNewTable]);
 
   const handleStageClick = useCallback((e: KonvaEventObject<MouseEvent>) => {
     if (e.target === e.target.getStage()) {
@@ -218,7 +303,7 @@ export default function EnhancedRestaurantCanvas({ width, height, onTouchDropRea
     });
   }, [state.layout.floorDimensions, dispatch, isLocked]);
 
-  // Touch drop handler
+  // Touch drop handler - enhanced with new table creation logic
   const handleTouchDrop = useCallback((config: any, clientPosition: { x: number; y: number }) => {
     if (isLocked || !stageRef.current) return; // Don't allow when locked
 
@@ -238,20 +323,9 @@ export default function EnhancedRestaurantCanvas({ width, height, onTouchDropRea
         restaurantFloorBounds
       );
 
-      const newTable = {
-        type: config.tableType,
-        x: constrainedPos.x,
-        y: constrainedPos.y,
-        rotation: 0,
-        status: "free" as const,
-        width: config.config.width,
-        height: config.config.height,
-        tableNumber: `T${tables.length + 1}`,
-      };
-
-      dispatch({ type: "ADD_TABLE", payload: { table: newTable } });
+      createNewTable(config.tableType, config.config, constrainedPos);
     }
-  }, [dispatch, viewState, tables.length, restaurantFloorBounds, isLocked]);
+  }, [viewState, restaurantFloorBounds, isLocked, createNewTable]);
 
   // Enhanced keyboard shortcuts including lock toggle
   useEffect(() => {

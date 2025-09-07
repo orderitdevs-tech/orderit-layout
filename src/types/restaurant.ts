@@ -1,4 +1,17 @@
-export type TableStatus = "free" | "occupied" | "reserved" | "maintenance";
+export type TableStatus =
+  | "free"
+  | "occupied"
+  | "reserved"
+  | "maintenance"
+  | "out-of-service";
+
+export type TableType =
+  | "regular"
+  | "vip"
+  | "booth"
+  | "bar"
+  | "outdoor"
+  | "private";
 
 export interface TableItem {
   id: string;
@@ -15,11 +28,16 @@ export interface TableItem {
   x: number;
   y: number;
   rotation: number;
+  width: number;
+  height: number;
+
+  // Extra metadata
   status: TableStatus;
   tableNumber?: string;
   floor?: string;
-  width: number;
-  height: number;
+  capacity?: number;
+  description?: string;
+  tableType?: TableType;
 }
 
 export interface Floor {

@@ -1,7 +1,8 @@
 // hooks/useTableManager.ts
 import { useMemo } from 'react';
-import { TableItem, CanvasBounds } from '@/types/canvas';
+import {CanvasBounds } from '@/types/canvas';
 import { constrainToCanvas } from '../utils/canvasUtils';
+import { TableItem } from '@/types/restaurant';
 
 interface UseTableManagerProps {
     tables: TableItem[];

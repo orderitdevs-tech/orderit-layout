@@ -9,15 +9,18 @@ import {
   FolderOpen,
   Layers,
   Edit3,
-  Trash2,
-  Check,
-  X,
+  Trash2
 } from "lucide-react";
 import { useRestaurant } from "../context/RestaurantContext";
 import { TABLE_CONFIGS } from "../utils/tableConfig";
 import { Floor } from "../types/restaurant";
-import { useTouchDrag } from "../hooks/useTouchDrag"; // Import the hook
+import { useTouchDrag } from "../hooks/useTouchDrag";
 import { motion } from "framer-motion";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import RenameModal from "./RenameModal";
+import { lockAtom } from "@/atom/atom";
+import { useAtom } from "jotai";
 
 interface PlaceItemProps {
   floor: Floor;
@@ -26,100 +29,84 @@ interface PlaceItemProps {
   onRename: (newName: string) => void;
   onDelete: () => void;
   canDelete: boolean;
+  isLocked: boolean;
 }
 
-function PlaceItem({
+export function PlaceItem({
   floor,
   isActive,
   onSwitch,
   onRename,
   onDelete,
   canDelete,
+  isLocked,
 }: PlaceItemProps) {
-  const [isEditing, setIsEditing] = useState(false);
-  const [editName, setEditName] = useState(floor.name);
+  const [isRenameOpen, setIsRenameOpen] = useState(false);
 
-  const handleSave = () => {
-    if (editName.trim()) {
-      onRename(editName.trim());
-      setIsEditing(false);
+  const handleSave = (newName: string) => {
+    if (!isLocked && newName.trim()) {
+      onRename(newName.trim());
+      setIsRenameOpen(false);
     }
   };
-
-  const handleCancel = () => {
-    setEditName(floor.name);
-    setIsEditing(false);
-  };
-
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") {
-      handleSave();
-    } else if (e.key === "Escape") {
-      handleCancel();
-    }
-  };
-
-  if (isEditing) {
-    return (
-      <div className="flex items-center gap-1 p-2 bg-primary-light border border-primary rounded-md">
-        <Layers size={14} className="text-primary flex-shrink-0" />
-        <input
-          type="text"
-          value={editName}
-          onChange={(e) => setEditName(e.target.value)}
-          onKeyDown={handleKeyPress}
-          className="flex-1 px-2 py-1 text-sm border border-custom rounded text-custom focus:outline-none focus:ring-2 focus:ring-primary"
-          autoFocus
-        />
-        <button
-          onClick={handleSave}
-          className="p-1 text-primary hover:bg-primary-lighter rounded"
-          title="Save"
-        >
-          <Check size={12} />
-        </button>
-        <button
-          onClick={handleCancel}
-          className="p-1 text-custom hover:bg-accent rounded"
-          title="Cancel"
-        >
-          <X size={12} />
-        </button>
-      </div>
-    );
-  }
 
   return (
-    <div
-      className={`flex items-center gap-1 p-2 rounded-md text-sm transition-colors ${isActive
-          ? "bg-primary-light text-primary border border-primary"
-          : "bg-accent text-custom hover:bg-primary-lighter border border-custom"
+    <>
+      {/* Row layout */}
+      <Card
+        className={`flex flex-row items-center justify-between gap-2 p-1 px-2 text-sm cursor-pointer transition-all duration-200 ${
+          isActive
+            ? "border-orange-500 bg-gradient-to-r from-orange-50 to-orange-100 text-orange-700 shadow-md"
+            : "hover:bg-orange-50 hover:border-orange-200 shadow-sm"
         }`}
-    >
-      <button
-        onClick={onSwitch}
-        className="flex items-center gap-2 flex-1 text-left"
       >
-        <Layers size={14} />
-        <span className="truncate">{floor.name}</span>
-      </button>
-      <button
-        onClick={() => setIsEditing(true)}
-        className="p-1 opacity-60 hover:text-primary hover:bg-primary-lighter hover:opacity-100 rounded transition-all"
-        title="Rename"
-      >
-        <Edit3 size={12} />
-      </button>
-      {canDelete && (
+        {/* Switchable button (icon + name) */}
         <button
-          onClick={onDelete}
-          className="p-1 opacity-60 hover:text-secondary hover:bg-secondary-lighter hover:opacity-100 rounded transition-all"
-          title="Delete"
+          onClick={onSwitch}
+          className="flex items-center gap-2 flex-1 min-w-0"
         >
-          <Trash2 size={12} />
+          <Layers
+            size={16}
+            className={`flex-shrink-0 ${
+              isActive ? "text-orange-600" : "text-gray-500"
+            }`}
+          />
+          <span className="truncate font-medium">{floor.name}</span>
         </button>
-      )}
-    </div>
+
+        {/* Action buttons */}
+        <div className="flex items-center gap-0.5 flex-shrink-0">
+          <Button
+            size="icon"
+            variant="ghost"
+            onClick={() => !isLocked && setIsRenameOpen(true)}
+            disabled={isLocked}
+            className="h-7 w-7 p-0 text-gray-500 hover:text-orange-600 hover:bg-orange-100 transition-colors duration-200 cursor-pointer"
+          >
+            <Edit3 size={12} />
+          </Button>
+          {canDelete && (
+            <Button
+              size="icon"
+              variant="ghost"
+              onClick={!isLocked ? onDelete : undefined}
+              disabled={isLocked}
+              className="h-7 w-7 p-0 text-gray-500 hover:text-red-600 hover:bg-red-100 transition-colors duration-200"
+            >
+              <Trash2 size={12} />
+            </Button>
+          )}
+        </div>
+      </Card>
+
+      {/* Reused modal for renaming */}
+      <RenameModal
+        open={isRenameOpen}
+        onClose={() => setIsRenameOpen(false)}
+        defaultValue={floor.name}
+        onSave={handleSave}
+      />
+    </>
   );
 }
 
@@ -127,29 +114,30 @@ interface ToolbarProps {
   onAddFloor: () => void;
   onSaveLayout: () => void;
   onLoadLayout: () => void;
-  onTouchDrop: (config: any, position: { x: number; y: number }) => void; // Add this prop
+  onTouchDrop: (config: any, position: { x: number; y: number }) => void;
 }
 
 export default function Toolbar({
   onAddFloor,
   onSaveLayout,
   onLoadLayout,
-  onTouchDrop, // Add this prop
+  onTouchDrop,
 }: ToolbarProps) {
   const { state, dispatch } = useRestaurant();
-  const { isDragging, dragPreview, handleTouchStart, handleTouchMove, handleTouchEnd } = useTouchDrag();
+  const { isDragging, dragPreview, handleTouchStart, handleTouchMove, handleTouchEnd } =
+    useTouchDrag();
+  const [isLocked] = useAtom(lockAtom);
 
   const handleDragStart = (
     e: React.DragEvent,
     tableType: keyof typeof TABLE_CONFIGS
   ) => {
-    console.log("Drag start:", tableType);
+    if (isLocked) return;
     const data = {
       type: "TABLE",
-      tableType: tableType,
+      tableType,
       config: TABLE_CONFIGS[tableType],
     };
-    console.log("Setting drag data:", data);
     e.dataTransfer.setData("application/json", JSON.stringify(data));
     e.dataTransfer.effectAllowed = "copy";
   };
@@ -161,27 +149,35 @@ export default function Toolbar({
 
   return (
     <>
-      <div className="bg-custom border-r border-custom w-64 h-full flex flex-col">
+      <div className="bg-white border-r border-gray-200 w-64 h-full flex flex-col shadow-lg min-h-screen">
         {/* Tools Section */}
-        <div className="p-4 border-b border-custom">
-          <h3 className="text-sm font-semibold text-custom mb-3">Tools</h3>
-          <div className="flex gap-1">
+        <div className="p-4 border-b border-gray-200">
+          <h3 className="text-sm font-semibold text-orange-600 mb-3">Tools</h3>
+          <div className="flex items-center gap-2">
             {tools.map((tool) => {
               const Icon = tool.icon;
+              const disabled =
+                isLocked && !(tool.id === "select" || tool.id === "pan");
+
               return (
-                <button
+                <Button
                   key={tool.id}
+                  disabled={disabled}
+                  variant={state.tool === tool.id ? "default" : "ghost"}
                   onClick={() =>
+                    !disabled &&
                     dispatch({ type: "SET_TOOL", payload: { tool: tool.id } })
                   }
-                  className={`p-2 rounded-md border transition-colors ${state.tool === tool.id
-                      ? "bg-primary-light border-primary text-primary"
-                      : "bg-accent border-custom text-custom hover:bg-primary-lighter"
-                    }`}
+                  size="sm"
+                  className={`flex items-center justify-center h-10 w-10 ${
+                    state.tool === tool.id
+                      ? "bg-gradient-to-r from-orange-500 to-orange-600 text-white"
+                      : "hover:bg-orange-50"
+                  }`}
                   title={tool.label}
                 >
                   <Icon size={16} />
-                </button>
+                </Button>
               );
             })}
           </div>
@@ -189,31 +185,51 @@ export default function Toolbar({
 
         {/* Items Section */}
         <div
-          className="p-4 border-b border-custom max-h-140 overflow-y-auto"
-          onTouchMove={handleTouchMove}
-          onTouchEnd={handleTouchEnd(onTouchDrop)}
+          className="p-4 border-b border-gray-200 min-h-64 overflow-y-auto"
+          onTouchMove={!isLocked ? handleTouchMove : undefined}
+          onTouchEnd={!isLocked ? handleTouchEnd(onTouchDrop) : undefined}
         >
-          <h3 className="text-sm font-semibold text-custom mb-3">Drag Items</h3>
-          <div className="grid grid-cols-2 gap-2">
+          <h3 className="text-sm font-semibold text-orange-600 mb-3">
+            Drag Items
+          </h3>
+          <div className="grid grid-cols-2 gap-3">
             {Object.entries(TABLE_CONFIGS).map(([type, config]) => (
               <div
                 key={type}
-                draggable
-                onDragStart={(e) =>
-                  handleDragStart(e, type as keyof typeof TABLE_CONFIGS)
+                draggable={!isLocked}
+                onDragStart={
+                  !isLocked
+                    ? (e: React.DragEvent<HTMLDivElement>) =>
+                        handleDragStart(e, type as keyof typeof TABLE_CONFIGS)
+                    : undefined
                 }
-                onTouchStart={handleTouchStart({
-                  type: "TABLE",
-                  tableType: type as keyof typeof TABLE_CONFIGS,
-                  config: config
-                })}
-                className={`aspect-square bg-gradient-to-br from-accent to-primary-lighter rounded-lg border border-custom cursor-grab hover:from-primary-lighter hover:to-primary-light hover:shadow-md hover:border-primary transition-all duration-200 drag-item no-select flex items-center justify-center p-2 ${isDragging ? 'touch-none' : ''
-                  }`}
+                onTouchStart={
+                  !isLocked
+                    ? () =>
+                        handleTouchStart({
+                          type: "TABLE",
+                          tableType: type as keyof typeof TABLE_CONFIGS,
+                          config,
+                        })
+                    : undefined
+                }
+                className={`aspect-square bg-gradient-to-br from-orange-100 to-orange-200 
+              rounded-lg border border-orange-300 cursor-${
+                isLocked ? "not-allowed" : "grab"
+              } 
+              flex items-center justify-center p-2 
+              transition-transform duration-200 ease-in-out
+              ${
+                !isLocked
+                  ? "hover:scale-105 active:scale-95 shadow-md"
+                  : "opacity-50"
+              }
+              ${isDragging ? "touch-none opacity-70" : ""}`}
               >
                 <motion.img
                   src={config.image}
                   alt={`${type} preview`}
-                  className="w-full h-full object-contain"
+                  className="w-full h-full object-contain pointer-events-none select-none"
                   draggable={false}
                 />
               </div>
@@ -221,9 +237,12 @@ export default function Toolbar({
           </div>
         </div>
 
+        {/* Spacer */}
+        <div className="flex-1"></div>
+
         {/* Places Management */}
-        <div className="p-4 border-b border-custom max-h-60 overflow-y-auto">
-          <h3 className="text-sm font-semibold text-custom mb-3">Places</h3>
+        <div className="p-4 border-b border-gray-200 max-h-64 overflow-y-auto">
+          <h3 className="text-sm font-semibold text-orange-600 mb-3">Places</h3>
           <div className="space-y-2">
             {state.layout.floors.map((floor) => (
               <PlaceItem
@@ -249,57 +268,66 @@ export default function Toolbar({
                   })
                 }
                 canDelete={state.layout.floors.length > 1}
+                isLocked={isLocked}
               />
             ))}
-            <button
-              onClick={onAddFloor}
-              className="w-full p-2 rounded-md text-sm bg-primary-light text-primary border border-primary hover:bg-primary-lighter transition-colors"
+            <Button
+              onClick={!isLocked ? onAddFloor : undefined}
+              disabled={isLocked}
+              size="sm"
+              className="w-full mt-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white hover:from-orange-600 hover:to-orange-700 shadow-sm"
             >
-              <Plus size={14} className="inline mr-2" />
+              <Plus size={14} className="mr-2" />
               Add Place
-            </button>
+            </Button>
           </div>
         </div>
 
         {/* Actions */}
-        <div className="p-4 mt-auto">
-          <div className="space-y-2">
-            <button
-              onClick={onSaveLayout}
-              className="w-full p-2 rounded-md text-sm bg-primary-light text-primary border border-primary hover:bg-primary hover:text-white transition-colors"
-            >
-              <Save size={14} className="inline mr-2" />
-              Save Layout
-            </button>
-            <button
-              onClick={onLoadLayout}
-              className="w-full p-2 rounded-md text-sm bg-accent text-custom border border-custom hover:bg-primary-lighter transition-colors"
-            >
-              <FolderOpen size={14} className="inline mr-2" />
-              Load Layout
-            </button>
-          </div>
+        <div className="p-4 space-y-2 flex-shrink-0">
+          <Button
+            onClick={!isLocked ? onSaveLayout : undefined}
+            disabled={isLocked}
+            size="sm"
+            className="w-full h-9 bg-gradient-to-r from-orange-500 to-orange-600 text-white hover:from-orange-600 hover:to-orange-700 shadow-sm transition-all duration-200"
+          >
+            <Save size={14} className="mr-2" />
+            Save Layout
+          </Button>
+          <Button
+            onClick={!isLocked ? onLoadLayout : undefined}
+            disabled={isLocked}
+            size="sm"
+            className="w-full h-9 hover:bg-orange-50 border-orange-200 text-orange-700 transition-all duration-200"
+            variant="outline"
+          >
+            <FolderOpen size={14} className="mr-2" />
+            Load Layout
+          </Button>
         </div>
       </div>
 
       {/* Touch Drag Preview */}
       {dragPreview && (
-        <div
+        <motion.div
           className="fixed pointer-events-none z-50"
           style={{
             left: dragPreview.x - 50,
             top: dragPreview.y - 50,
-            transform: 'translate(-50%, -50%)'
+            transform: "translate(-50%, -50%)",
           }}
+          initial={{ scale: 0.9, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          exit={{ scale: 0.9, opacity: 0 }}
         >
-          <div className="w-20 h-20 bg-gradient-to-br from-accent to-primary-lighter rounded-lg border-2 border-primary shadow-lg opacity-80 flex items-center justify-center p-2">
+          <div className="w-20 h-20 bg-gradient-to-br from-orange-200 to-orange-300 rounded-lg border-2 border-orange-500 shadow-lg opacity-80 flex items-center justify-center p-2">
             <motion.img
               src={dragPreview.config.config.image}
               alt="Drag preview"
               className="w-full h-full object-contain"
             />
           </div>
-        </div>
+        </motion.div>
       )}
     </>
   );
