@@ -1,5 +1,5 @@
 // Background colors for different table and facility types
-export const getBackgroundColorForTableType = (tableType: string) => {
+export const getBackgroundColorForItemType = (item: string) => {
     const colorMap: { [key: string]: string } = {
         // Table types
         'table-2': '#FFE08A', // Warm yellow - 2 seater
@@ -18,5 +18,5 @@ export const getBackgroundColorForTableType = (tableType: string) => {
         'default': '#E1E4E8' // Neutral gray
     };
 
-    return colorMap[tableType] || colorMap['default'];
+    return colorMap[item] || colorMap['default'];
 };

@@ -10,8 +10,8 @@ const FloorControls: React.FC<FloorControlsProps> = ({
     onWidthChange,
     onHeightChange,
     showSettings,
-    tablesCount,
-    visibleTablesCount,
+    itemsCount,
+    visibleItemsCount,
     viewScale
 }) => {
     const widthProgress = ((floorDimensions.width - 800) / (3000 - 800)) * 100;
@@ -194,7 +194,7 @@ const FloorControls: React.FC<FloorControlsProps> = ({
                                     <div className="font-semibold text-slate-700 mb-1">Performance Stats</div>
                                     <div className="grid grid-cols-2 gap-2 text-xs">
                                         <div className="bg-white/60 px-2 py-1 rounded-md">
-                                            <strong>Rendered:</strong> {visibleTablesCount}/{tablesCount}
+                                            <strong>Rendered:</strong> {visibleItemsCount}/{itemsCount}
                                         </div>
                                         <div className="bg-white/60 px-2 py-1 rounded-md">
                                             <strong>Scale:</strong> {(viewScale * 100).toFixed(1)}%

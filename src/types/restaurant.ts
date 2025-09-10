@@ -13,18 +13,18 @@ export type TableType =
   | "outdoor"
   | "private";
 
-export interface TableItem {
+export interface LayoutItem {
   id: string;
   type:
-    | "table-2"
-    | "table-4"
-    | "table-6"
-    | "table-8"
-    | "table-12"
-    | "washroom"
-    | "counter"
-    | "entry-gate"
-    | "exit-gate";
+  | "table-2"
+  | "table-4"
+  | "table-6"
+  | "table-8"
+  | "table-12"
+  | "washroom"
+  | "counter"
+  | "entry-gate"
+  | "exit-gate";
   x: number;
   y: number;
   rotation: number;
@@ -32,7 +32,7 @@ export interface TableItem {
   height: number;
 
   // Extra metadata
-  status: TableStatus;
+  status?: TableStatus;
   tableNumber?: string;
   floor?: string;
   capacity?: number;
@@ -43,34 +43,48 @@ export interface TableItem {
 export interface Floor {
   id: string;
   name: string;
-  tables: TableItem[];
+  width: number;
+  height: number;
+  layoutItems: LayoutItem[];
   background?: string;
+  isLocked: boolean;
+  version: number;
 }
 
 export interface RestaurantLayout {
   id: string;
   name: string;
-  floors: Floor[];
-  currentFloor: string;
+  floor: Floor;
 }
 
 export interface DragItem {
   type:
-    | "table-2"
-    | "table-3"
-    | "table-4"
-    | "table-5"
-    | "table-6"
-    | "table-7"
-    | "table-8"
-    | "table-9"
-    | "table-10"
-    | "table-12"
-    | "washroom"
-    | "counter"
-    | "entry-gate"
-    | "exit-gate";
+  | "table-2"
+  | "table-3"
+  | "table-4"
+  | "table-5"
+  | "table-6"
+  | "table-7"
+  | "table-8"
+  | "table-9"
+  | "table-10"
+  | "table-12"
+  | "washroom"
+  | "counter"
+  | "entry-gate"
+  | "exit-gate";
   width: number;
   height: number;
   image: string;
+}
+
+export interface ExportRestaurantLayout {
+  id: string;
+  name: string;
+  floor: Floor;
+  metadata?: {
+    exportedAt?: string;
+    exportedBy?: string;
+    [key: string]: any; // Allow additional metadata
+  };
 }

@@ -1,11 +1,11 @@
 // Create this file: src/hooks/useTouchDrag.ts (or wherever your hooks are located)
 
 import { useState, useRef, useCallback } from 'react';
-import { TABLE_CONFIGS } from '../utils/tableConfig';
+import { LAYOUT_ITEM_CONFIGS } from '../utils/tableConfig';
 
 interface TouchDragConfig {
     type: string;
-    tableType: keyof typeof TABLE_CONFIGS;
+    tableType: keyof typeof LAYOUT_ITEM_CONFIGS;
     config: any;
 }
 

@@ -8,7 +8,6 @@ import {
 import Toolbar from "./Toolbar";
 import DynamicCanvasWrapper from "./DynamicCanvas";
 import PropertiesPanel from "./PropertiesPanel";
-import AddFloorModal from "./AddFloorModal";
 import HelpTooltip from "./HelpTooltip";
 import RestaurantHeader from "./RestaurantHeader";
 
@@ -20,9 +19,9 @@ interface TouchDragConfig {
 }
 
 function RestaurantLayoutContent() {
-  const { state, dispatch, exportLayoutWithDimensions } = useRestaurant();
+  const { state } = useRestaurant();
   const [canvasSize, setCanvasSize] = useState({ width: 800, height: 600 });
-  const [showAddFloorModal, setShowAddFloorModal] = useState(false);
+  
 
   // Update canvas size on window resize with correct dimensions
   useEffect(() => {
@@ -46,54 +45,6 @@ function RestaurantLayoutContent() {
     return () => window.removeEventListener("resize", updateCanvasSize);
   }, []);
 
-  const handleAddFloor = (name: string) => {
-    dispatch({ type: "ADD_FLOOR", payload: { name } });
-  };
-
-  const handleSaveLayout = () => {
-    const layoutData = JSON.stringify(exportLayoutWithDimensions(), null, 2);
-    const blob = new Blob([layoutData], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${state.layout.name.replace(/\s+/g, "_")}_layout_v${state.layout.floorDimensions ? '1.1' : '1.0'}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  };
-
-  const handleLoadLayout = () => {
-    const input = document.createElement("input");
-    input.type = "file";
-    input.accept = ".json";
-
-    input.onchange = (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = (event) => {
-          try {
-            const layout = JSON.parse(event.target?.result as string);
-
-            // Handle layout loading with default floor dimensions if missing
-            if (!layout.floorDimensions) {
-              layout.floorDimensions = { width: 1600, height: 1200 };
-            }
-
-            dispatch({ type: "LOAD_LAYOUT", payload: { layout } });
-          } catch (error) {
-            alert("Error loading layout file. Please check the file format.");
-            console.error("Error parsing layout:", error);
-          }
-        };
-        reader.readAsText(file);
-      }
-    };
-
-    input.click();
-  };
 
   const canvasHandlerRef = useRef<((config: any, position: { x: number; y: number }) => void) | null>(null);
 
@@ -112,9 +63,6 @@ function RestaurantLayoutContent() {
       {/* Toolbar - Fixed width */}
       <div className="w-64 flex-shrink-0">
         <Toolbar
-          onAddFloor={() => setShowAddFloorModal(true)}
-          onSaveLayout={handleSaveLayout}
-          onLoadLayout={handleLoadLayout}
           onTouchDrop={handleTouchDrop}
         />
       </div>
@@ -166,13 +114,6 @@ function RestaurantLayoutContent() {
           </div>
         </div>
       </div>
-
-      {/* Modals */}
-      <AddFloorModal
-        isOpen={showAddFloorModal}
-        onClose={() => setShowAddFloorModal(false)}
-        onConfirm={handleAddFloor}
-      />
 
       <HelpTooltip />
     </div>

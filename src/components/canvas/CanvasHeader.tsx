@@ -16,8 +16,8 @@ import {
 const CanvasHeader: React.FC<HeaderProps> = ({
     floorDimensions,
     viewScale,
-    tablesCount,
-    visibleTablesCount,
+    itemsCount,
+    visibleItemsCount,
     isLocked,
     onToggleLock,
     showSettings,
@@ -78,10 +78,10 @@ const CanvasHeader: React.FC<HeaderProps> = ({
                 >
                     <div className="flex items-center gap-1 text-xs text-slate-600 font-medium">
                         <Table className="h-3.5 w-3.5" />
-                        <span>{tablesCount} tables</span>
+                        <span>{itemsCount} Items</span>
                         <span className="text-slate-400">•</span>
                         <Eye className="h-3.5 w-3.5" />
-                        <span>{visibleTablesCount} visible</span>
+                        <span>{visibleItemsCount} visible</span>
                     </div>
                     <motion.div
                         className={`flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full mt-1 ${isLocked

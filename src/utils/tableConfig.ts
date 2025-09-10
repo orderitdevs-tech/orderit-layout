@@ -1,6 +1,6 @@
 import { DragItem, TableStatus } from "../types/restaurant";
 
-export const TABLE_CONFIGS: Record<string, DragItem> = {
+export const LAYOUT_ITEM_CONFIGS: Record<string, DragItem> = {
   "table-2": {
     type: "table-2",
     width: 80,
@@ -66,7 +66,7 @@ export const TABLE_STATUS_COLORS: Record<TableStatus, string> = {
 };
 
 export const generateTableId = (): string => {
-  return `table_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  return `item_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 };
 
 export const generateFloorId = (): string => {

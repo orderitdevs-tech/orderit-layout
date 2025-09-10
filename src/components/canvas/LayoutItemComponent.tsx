@@ -1,49 +1,49 @@
-// components/TableComponent.tsx
+// components/LayoutItemComponent.tsx
 import React, { useRef, useCallback, useMemo, useContext, memo } from 'react';
 import { Group, Rect, Text, Path, Image as KonvaImage } from 'react-konva';
 import useImage from 'use-image';
-import { TableComponentProps } from '@/types/canvas';
+import { LayoutItemComponentProps } from '@/types/canvas';
 import { PerformanceContext } from '@/context/PerformanceContext';
-import { TABLE_CONFIGS, TABLE_STATUS_COLORS } from '@/utils/tableConfig';
-import { TABLE_SVG_PATHS } from "@/utils/compoents";
-import { getBackgroundColorForTableType } from '@/lib/colorCode';
+import { LAYOUT_ITEM_CONFIGS, TABLE_STATUS_COLORS } from '@/utils/tableConfig';
+import { LAYOUT_ITEM_SVG_PATHS } from "@/utils/compoents";
+import { getBackgroundColorForItemType } from '@/lib/colorCode';
 import { constrainToCanvas, getViewBoxDimensions } from '@/utils/canvasUtils';
 
-const TableComponent: React.FC<TableComponentProps> = memo(function TableComponent({
-    table,
+const LayoutItemComponent: React.FC<LayoutItemComponentProps> = memo(function LayoutItemComponent({
+    layoutItem: item,
     isSelected,
     isLocked,
     onSelect,
     onUpdate,
 }) {
-    const { isTableVisible, scale, canvasBounds } = useContext(PerformanceContext);
+    const { isLayoutItemVisible, scale, canvasBounds } = useContext(PerformanceContext);
     const groupRef = useRef<any>(null);
     const isDraggingRef = useRef(false);
     const mouseDownPosRef = useRef<{ x: number; y: number } | null>(null);
     const initialPosRef = useRef<{ x: number; y: number } | null>(null);
 
     // Determine if this is a table (show SVG) or other item (show image)
-    const isTable = table.type.startsWith("table-");
+    const isTable = item.type.startsWith("table-");
 
     // Import the image hook for non-table items
     const [image] = useImage(
-        isTable ? "" : TABLE_CONFIGS[table.type]?.image || ""
+        isTable ? "" : LAYOUT_ITEM_CONFIGS[item.type]?.image || ""
     );
 
     // SVG config for tables only
     const svgConfig = useMemo(() => {
         if (!isTable) return null;
 
-        const svgData = TABLE_SVG_PATHS[table.type];
+        const svgData = LAYOUT_ITEM_SVG_PATHS[item.type];
         if (!svgData) return null;
 
         const viewBoxDims = getViewBoxDimensions(svgData.viewBox);
-        const scaleX = table.width / viewBoxDims.width;
-        const scaleY = table.height / viewBoxDims.height;
+        const scaleX = item.width / viewBoxDims.width;
+        const scaleY = item.height / viewBoxDims.height;
         const svgScale = Math.min(scaleX, scaleY) * 0.8;
 
         return { svgData, viewBoxDims, svgScale };
-    }, [table.type, table.width, table.height, isTable]);
+    }, [item.type, item.width, item.height, isTable]);
 
     const handleMouseDown = useCallback((e: any) => {
         e.evt.preventDefault();
@@ -60,7 +60,7 @@ const TableComponent: React.FC<TableComponentProps> = memo(function TableCompone
 
         if (pointer && groupRef.current) {
             mouseDownPosRef.current = { x: pointer.x, y: pointer.y };
-            initialPosRef.current = { x: table.x, y: table.y };
+            initialPosRef.current = { x: item.x, y: item.y };
             isDraggingRef.current = false;
 
             // Disable stage dragging
@@ -87,7 +87,7 @@ const TableComponent: React.FC<TableComponentProps> = memo(function TableCompone
 
                     const constrainedPos = constrainToCanvas(
                         newPos,
-                        { width: table.width, height: table.height },
+                        { width: item.width, height: item.height },
                         canvasBounds
                     );
 
@@ -120,10 +120,10 @@ const TableComponent: React.FC<TableComponentProps> = memo(function TableCompone
             window.addEventListener('mousemove', handleMouseMove);
             window.addEventListener('mouseup', handleMouseUp);
         }
-    }, [table, onSelect, onUpdate, scale, canvasBounds, isLocked]);
+    }, [item, onSelect, onUpdate, scale, canvasBounds, isLocked]);
 
     // Early return after all hooks have been called
-    if (!isTableVisible(table)) return null;
+    if (!isLayoutItemVisible(item)) return null;
 
     const showDetails = scale > 0.7;
     const showText = scale > 0.5;
@@ -136,13 +136,13 @@ const TableComponent: React.FC<TableComponentProps> = memo(function TableCompone
     return (
         <Group
             ref={groupRef}
-            x={table.x}
-            y={table.y}
-            rotation={table.rotation}
+            x={item.x}
+            y={item.y}
+            rotation={item.rotation}
             draggable={false}
             onMouseDown={handleMouseDown}
             onTouchStart={handleMouseDown}
-            cursor={cursorStyle} 
+            cursor={cursorStyle}
         >
             {/* Conditional Rendering: SVG for tables, Image for others */}
             {isTable ? (
@@ -151,11 +151,11 @@ const TableComponent: React.FC<TableComponentProps> = memo(function TableCompone
                     {/* Background for SVG - Always visible until 10% zoom */}
                     {showBackground && (
                         <Rect
-                            width={table.width * 0.9}
-                            height={table.height * 0.9}
-                            offsetX={table.width * 0.45}
-                            offsetY={table.height * 0.45}
-                            fill={getBackgroundColorForTableType(table.type)}
+                            width={item.width * 0.9}
+                            height={item.height * 0.9}
+                            offsetX={item.width * 0.45}
+                            offsetY={item.height * 0.45}
+                            fill={getBackgroundColorForItemType(item.type)}
                             cornerRadius={8}
                             shadowColor="rgba(0,0,0,0.1)"
                             shadowBlur={4}
@@ -178,13 +178,13 @@ const TableComponent: React.FC<TableComponentProps> = memo(function TableCompone
                     )}
 
                     {/* Status Indicator for tables */}
-                    {showDetails && (
+                    {showDetails && item.status && (
                         <Rect
                             x={-8}
                             y={-8}
                             width={16}
                             height={16}
-                            fill={TABLE_STATUS_COLORS[table.status]}
+                            fill={TABLE_STATUS_COLORS[item.status]}
                             cornerRadius={8}
                             stroke="#ffffff"
                             strokeWidth={2}
@@ -197,11 +197,11 @@ const TableComponent: React.FC<TableComponentProps> = memo(function TableCompone
                     {/* Background for non-table items - visible at low zoom */}
                     {showBackground && (
                         <Rect
-                            width={table.width * 0.9}
-                            height={table.height * 0.9}
-                            offsetX={table.width * 0.45}
-                            offsetY={table.height * 0.45}
-                            fill={getBackgroundColorForTableType(table.type)}
+                            width={item.width * 0.9}
+                            height={item.height * 0.9}
+                            offsetX={item.width * 0.45}
+                            offsetY={item.height * 0.45}
+                            fill={getBackgroundColorForItemType(item.type)}
                             cornerRadius={8}
                             shadowColor="rgba(0,0,0,0.1)"
                             shadowBlur={4}
@@ -213,19 +213,19 @@ const TableComponent: React.FC<TableComponentProps> = memo(function TableCompone
                     {!showBackground && image ? (
                         <KonvaImage
                             image={image}
-                            width={table.width}
-                            height={table.height}
-                            offsetX={table.width / 2}
-                            offsetY={table.height / 2}
+                            width={item.width}
+                            height={item.height}
+                            offsetX={item.width / 2}
+                            offsetY={item.height / 2}
                             opacity={showSVG ? 1 : 0.8}
                         />
                     ) : !showBackground && !image && (
                         // Fallback rectangle if image doesn't load
                         <Rect
-                            width={table.width}
-                            height={table.height}
-                            offsetX={table.width / 2}
-                            offsetY={table.height / 2}
+                            width={item.width}
+                            height={item.height}
+                            offsetX={item.width / 2}
+                            offsetY={item.height / 2}
                             fill="#e5e7eb"
                             stroke="#9ca3af"
                             strokeWidth={1}
@@ -235,15 +235,15 @@ const TableComponent: React.FC<TableComponentProps> = memo(function TableCompone
                 </>
             )}
 
-            {/* Table Number (only for tables) */}
-            {showText && table.tableNumber && isTable && (
+            {/* Item Label (for tables and other items with labels) */}
+            {showText && (item.tableNumber) && (
                 <Text
-                    x={-table.width * 0.5}
-                    y={table.height * 0.5 + 5}
-                    width={table.width}
+                    x={-item.width * 0.5}
+                    y={item.height * 0.5 + 5}
+                    width={item.width}
                     height={20}
-                    text={table.tableNumber}
-                    fontSize={Math.max(10, Math.min(14, table.width / 6))}
+                    text={item.tableNumber || ''}
+                    fontSize={Math.max(10, Math.min(14, item.width / 6))}
                     fontFamily="Arial"
                     fontStyle="bold"
                     fill="#374151"
@@ -255,10 +255,10 @@ const TableComponent: React.FC<TableComponentProps> = memo(function TableCompone
             {/* Selection Border */}
             {isSelected && (
                 <Rect
-                    width={table.width}
-                    height={table.height}
-                    offsetX={table.width * 0.5}
-                    offsetY={table.height * 0.5}
+                    width={item.width}
+                    height={item.height}
+                    offsetX={item.width * 0.5}
+                    offsetY={item.height * 0.5}
                     stroke={isLocked ? "#ef4444" : "#3b82f6"}
                     strokeWidth={3}
                     dash={isLocked ? [4, 4] : [8, 4]}
@@ -269,8 +269,8 @@ const TableComponent: React.FC<TableComponentProps> = memo(function TableCompone
             {/* Lock Indicator */}
             {isLocked && isSelected && (
                 <Rect
-                    x={table.width * 0.5 - 12}
-                    y={-table.height * 0.5 - 12}
+                    x={item.width * 0.5 - 12}
+                    y={-item.height * 0.5 - 12}
                     width={24}
                     height={24}
                     fill="#ef4444"
@@ -283,4 +283,4 @@ const TableComponent: React.FC<TableComponentProps> = memo(function TableCompone
     );
 });
 
-export default TableComponent;
+export default LayoutItemComponent;

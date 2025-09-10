@@ -34,26 +34,9 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Righteous } from "next/font/google";
+import { RestaurantLayout } from "../types/restaurant";
 
 const righteous = Righteous({ subsets: ['latin'], weight: '400' });
-
-// Interface definitions based on your state structure
-interface Floor {
-  id: string;
-  name: string;
-  tables: any[];
-  // Add other floor properties as needed
-}
-
-interface Layout {
-  name: string;
-  currentFloor: string;
-  floors: Floor[];
-  floorDimensions?: {
-    width: number;
-    height: number;
-  };
-}
 
 interface Notification {
   id: string;
@@ -72,7 +55,7 @@ interface UserData {
 }
 
 interface RestaurantHeaderProps {
-  layout: Layout;
+  layout: RestaurantLayout;
   userData?: UserData;
   notifications?: Notification[];
 }
@@ -92,10 +75,10 @@ const RestaurantHeader: React.FC<RestaurantHeaderProps> = ({
     notifications.filter(n => !n.read).length
   );
 
-  // Find current floor data
-  const currentFloor = layout.floors.find(f => f.id === layout.currentFloor);
-  const tableCount = currentFloor ? currentFloor.tables.length : 0;
-  const currentFloorName = currentFloor?.name || "No floor selected";
+  // Get table count from the current floor's layoutItems
+  const tableCount = layout.floor.layoutItems.filter(item =>
+    item.type.startsWith("table-")
+  ).length;
 
   const markAsRead = (id: string) => {
     console.log(id);
@@ -151,14 +134,12 @@ const RestaurantHeader: React.FC<RestaurantHeaderProps> = ({
                 whileHover={{ scale: 1.02 }}
               >
                 <MapPin className="h-3.5 w-3.5 text-amber-600" />
-                {currentFloorName}
+                {layout.floor.name}
               </motion.p>
-              {layout.floorDimensions && (
-                <Badge className="text-xs font-mono py-1 flex items-center gap-1 bg-amber-100 text-amber-800 border-amber-200/60 hover:bg-amber-200">
-                  <Ruler className="h-3 w-3 text-amber-600" />
-                  {layout.floorDimensions.width}×{layout.floorDimensions.height}px
-                </Badge>
-              )}
+              <Badge className="text-xs font-mono py-1 flex items-center gap-1 bg-amber-100 text-amber-800 border-amber-200/60 hover:bg-amber-200">
+                <Ruler className="h-3 w-3 text-amber-600" />
+                {layout.floor.width}×{layout.floor.height}px
+              </Badge>
             </div>
           </div>
         </div>

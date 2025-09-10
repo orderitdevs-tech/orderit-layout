@@ -9,7 +9,7 @@ const VirtualGrid: React.FC = memo(function VirtualGrid() {
     if (scale < 0.3) return null;
 
     const gridSize = 40;
-    const gridOpacity = Math.min(0.5, scale * 0.5);
+    const gridOpacity = Math.min(0.6, scale * 0.6);
 
     const buffer = 50;
     const startX = Math.max(canvasBounds.x, Math.floor((viewport.x - buffer) / gridSize) * gridSize);
@@ -26,7 +26,7 @@ const VirtualGrid: React.FC = memo(function VirtualGrid() {
                 <Line
                     key={`v-${x}`}
                     points={[x, Math.max(startY, canvasBounds.y), x, Math.min(endY, canvasBounds.y + canvasBounds.height)]}
-                    stroke="#e2e8f0"
+                    stroke="#cbd5e1"
                     strokeWidth={0.75}
                     opacity={gridOpacity}
                     listening={false}

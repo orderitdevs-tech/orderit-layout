@@ -25,14 +25,13 @@ import CanvasHeader from './canvas/CanvasHeader';
 import FloorControls from './canvas/FloorControls';
 import DragIndicator from './canvas/DragIndicator';
 import VirtualGrid from './canvas/VirtualGrid';
-import TableComponent from './canvas/TableComponent';
+import LayoutItemComponent from './canvas/LayoutItemComponent';
 import { PerformanceContext } from '../context/PerformanceContext';
-import { useTableManager } from '../hooks/useTableManager';
+import { useItemManager } from '../hooks/useItemManager';
 import { useResponsiveCanvas } from '../hooks/useResponsiveCanvas';
 import { constrainToCanvas, calculateAutoFit } from '../utils/canvasUtils';
-import { TableItem, TableType } from "@/types/restaurant";
-import { useAtom } from "jotai";
-import { lockAtom } from "@/atom/atom";
+import { LayoutItem, TableType } from "@/types/restaurant";
+
 
 // Helper function to determine table type based on component type
 const getTableTypeFromComponentType = (componentType: string): TableType => {
@@ -44,7 +43,13 @@ const getTableTypeFromComponentType = (componentType: string): TableType => {
     case "table-12":
       return "regular";
     case "counter":
-      return "bar";
+      return "regular";
+    case "washroom":
+      return "regular"; // Default for non-table items
+    case "entry-gate":
+      return "regular";
+    case "exit-gate":
+      return "regular";
     default:
       return "regular";
   }
@@ -70,21 +75,21 @@ const getCapacityFromComponentType = (componentType: string): number => {
   }
 };
 
-// Helper function to generate table number based on type
-const generateTableNumber = (componentType: string, existingTables: TableItem[]): string => {
+// Helper function to generate item number based on type
+const generateItemNumber = (componentType: string, existingItems: LayoutItem[]): string => {
   // For dining tables, use T prefix with sequential numbering
   const diningTableTypes = ["table-2", "table-4", "table-6", "table-8", "table-12"];
 
   if (diningTableTypes.includes(componentType)) {
     // Count existing dining tables
-    const diningTables = existingTables.filter(table =>
-      diningTableTypes.includes(table.type)
+    const diningItems = existingItems.filter(item =>
+      diningTableTypes.includes(item.type)
     );
-    return `T${diningTables.length + 1}`;
+    return `T${diningItems.length + 1}`;
   }
 
   // For other components, use component-specific prefixes
-  const componentCounts = existingTables.filter(table => table.type === componentType).length;
+  const componentCounts = existingItems.filter(item => item.type === componentType).length;
 
   switch (componentType) {
     case "washroom":
@@ -100,22 +105,23 @@ const generateTableNumber = (componentType: string, existingTables: TableItem[])
   }
 };
 
-export default function EnhancedRestaurantCanvas({ width, height, onTouchDropReady }: CanvasProps) {
-  const { state, dispatch, getCurrentFloorTables } = useRestaurant();
+export default function RestaurantCanvas({ width, height, onTouchDropReady }: CanvasProps) {
+  const { state, dispatch, getCurrentFloorItems, toggleFloorLock } = useRestaurant();
   const stageRef = useRef<any>(null);
 
   // Responsive canvas hook
   const { getResponsiveHeaderHeight } = useResponsiveCanvas({ width, height });
 
   // Lock state - main new feature
-  const [isLocked, setIsLocked] = useAtom(lockAtom);
+  const isLocked = state.layout.floor.isLocked;
   const [showSettings, setShowSettings] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
 
-  // Floor dimensions
-  const floorDimensions = useMemo(() =>
-    state.layout.floorDimensions || { width: 1600, height: 1200 }
-    , [state.layout.floorDimensions]);
+  // Floor dimensions - now from the floor object
+  const floorDimensions = useMemo(() => ({
+    width: state.layout.floor.width,
+    height: state.layout.floor.height
+  }), [state.layout.floor.width, state.layout.floor.height]);
 
   const headerHeight = getResponsiveHeaderHeight();
 
@@ -138,11 +144,11 @@ export default function EnhancedRestaurantCanvas({ width, height, onTouchDropRea
   // View state
   const [viewState, setViewState] = useState(() => ({ x: 0, y: 0, scale: 1 }));
 
-  const tables = getCurrentFloorTables();
+  const items = getCurrentFloorItems();
 
-  // Use the table manager hook with lock state
-  const { selectHandlers, updateHandlers } = useTableManager({
-    tables,
+  // Use the item manager hook with lock state
+  const { selectHandlers, updateHandlers } = useItemManager({
+    items,
     canvasBounds: restaurantFloorBounds,
     dispatch,
     isLocked
@@ -161,26 +167,27 @@ export default function EnhancedRestaurantCanvas({ width, height, onTouchDropRea
     height: (height - headerHeight) / viewState.scale,
   }), [viewState, width, height, headerHeight]);
 
-  // Table visibility
-  const isTableVisible = useCallback((table: TableItem) => {
+  // Item visibility
+  const isLayoutItemVisible = useCallback((item: LayoutItem) => {
     const buffer = 100;
     return (
-      table.x > viewport.x - buffer &&
-      table.x < viewport.x + viewport.width + buffer &&
-      table.y > viewport.y - buffer &&
-      table.y < viewport.y + viewport.height + buffer
+      item.x > viewport.x - buffer &&
+      item.x < viewport.x + viewport.width + buffer &&
+      item.y > viewport.y - buffer &&
+      item.y < viewport.y + viewport.height + buffer
     );
   }, [viewport]);
 
-  const visibleTables = useMemo(() => tables.filter(isTableVisible), [tables, isTableVisible]);
+
+  const visibleItems = useMemo(() => items.filter(isLayoutItemVisible), [items, isLayoutItemVisible]);
 
   // Performance context value
   const performanceContextValue = useMemo(() => ({
     viewport,
     scale: viewState.scale,
-    isTableVisible,
+    isLayoutItemVisible,
     canvasBounds: restaurantFloorBounds,
-  }), [viewport, viewState.scale, isTableVisible, restaurantFloorBounds]);
+  }), [viewport, viewState.scale, isLayoutItemVisible, restaurantFloorBounds]);
 
   // Event handlers
   const handleWheel = useCallback((e: KonvaEventObject<WheelEvent>) => {
@@ -207,27 +214,27 @@ export default function EnhancedRestaurantCanvas({ width, height, onTouchDropRea
     setViewState({ x: newPos.x, y: newPos.y, scale: newScale });
   }, [viewState]);
 
-  // Enhanced table creation function
-  const createNewTable = useCallback((tableType: string, config: any, constrainedPos: { x: number; y: number }) => {
-    const tableNumber = generateTableNumber(tableType, tables);
-    const tableTypeCategory = getTableTypeFromComponentType(tableType);
-    const capacity = getCapacityFromComponentType(tableType);
+  // Enhanced item creation function
+  const createNewItem = useCallback((itemType: string, config: any, constrainedPos: { x: number; y: number }) => {
+    const itemNumber = generateItemNumber(itemType, items);
+    const tableTypeCategory = getTableTypeFromComponentType(itemType);
+    const capacity = getCapacityFromComponentType(itemType);
 
-    const newTable: Omit<TableItem, "id"> = {
-      type: tableType as any,
+    const newItem: Omit<LayoutItem, "id"> = {
+      type: itemType as any,
       x: constrainedPos.x,
       y: constrainedPos.y,
       rotation: 0,
       status: "free" as const,
       width: config.width,
       height: config.height,
-      tableNumber,
+      tableNumber: itemNumber,
       tableType: tableTypeCategory,
       capacity,
       description: undefined,
     };
-    dispatch({ type: "ADD_TABLE", payload: { table: newTable } });
-  }, [tables, dispatch]);
+    dispatch({ type: "ADD_ITEM", payload: { item: newItem } });
+  }, [items, dispatch]);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -247,7 +254,7 @@ export default function EnhancedRestaurantCanvas({ width, height, onTouchDropRea
       const data = JSON.parse(e.dataTransfer.getData("application/json"));
       if (data.type === "TABLE") {
         const config = data.config;
-        const tableType = data.tableType;
+        const itemType = data.tableType;
 
         if (stageX >= restaurantFloorBounds.x &&
           stageX <= restaurantFloorBounds.x + restaurantFloorBounds.width &&
@@ -260,17 +267,17 @@ export default function EnhancedRestaurantCanvas({ width, height, onTouchDropRea
             restaurantFloorBounds
           );
 
-          createNewTable(tableType, config, constrainedPos);
+          createNewItem(itemType, config, constrainedPos);
         }
       }
     } catch (error) {
       console.error("Drop parsing error:", error);
     }
-  }, [dispatch, viewState, restaurantFloorBounds, isLocked, createNewTable]);
+  }, [dispatch, viewState, restaurantFloorBounds, isLocked, createNewItem]);
 
   const handleStageClick = useCallback((e: KonvaEventObject<MouseEvent>) => {
     if (e.target === e.target.getStage()) {
-      dispatch({ type: "SELECT_TABLE", payload: { tableId: null } });
+      dispatch({ type: "SELECT_ITEM", payload: { itemId: null } });
     }
   }, [dispatch]);
 
@@ -285,25 +292,25 @@ export default function EnhancedRestaurantCanvas({ width, height, onTouchDropRea
   // Floor dimension controls - now with lock check
   const adjustFloorWidth = useCallback((delta: number) => {
     if (isLocked) return; // Prevent changes when locked
-    const currentDimensions = state.layout.floorDimensions || { width: 1600, height: 1200 };
-    const newWidth = Math.max(800, Math.min(3000, currentDimensions.width + delta));
+    const currentWidth = state.layout.floor.width;
+    const newWidth = Math.max(800, Math.min(3000, currentWidth + delta));
     dispatch({
       type: "UPDATE_FLOOR_DIMENSIONS",
-      payload: { dimensions: { ...currentDimensions, width: newWidth } }
+      payload: { dimensions: { width: newWidth, height: state.layout.floor.height } }
     });
-  }, [state.layout.floorDimensions, dispatch, isLocked]);
+  }, [state.layout.floor.width, state.layout.floor.height, dispatch, isLocked]);
 
   const adjustFloorHeight = useCallback((delta: number) => {
     if (isLocked) return; // Prevent changes when locked
-    const currentDimensions = state.layout.floorDimensions || { width: 1600, height: 1200 };
-    const newHeight = Math.max(600, Math.min(2400, currentDimensions.height + delta));
+    const currentHeight = state.layout.floor.height;
+    const newHeight = Math.max(600, Math.min(2400, currentHeight + delta));
     dispatch({
       type: "UPDATE_FLOOR_DIMENSIONS",
-      payload: { dimensions: { ...currentDimensions, height: newHeight } }
+      payload: { dimensions: { width: state.layout.floor.width, height: newHeight } }
     });
-  }, [state.layout.floorDimensions, dispatch, isLocked]);
+  }, [state.layout.floor.width, state.layout.floor.height, dispatch, isLocked]);
 
-  // Touch drop handler - enhanced with new table creation logic
+  // Touch drop handler - enhanced with new item creation logic
   const handleTouchDrop = useCallback((config: any, clientPosition: { x: number; y: number }) => {
     if (isLocked || !stageRef.current) return; // Don't allow when locked
 
@@ -323,30 +330,30 @@ export default function EnhancedRestaurantCanvas({ width, height, onTouchDropRea
         restaurantFloorBounds
       );
 
-      createNewTable(config.tableType, config.config, constrainedPos);
+      createNewItem(config.tableType, config.config, constrainedPos);
     }
-  }, [viewState, restaurantFloorBounds, isLocked, createNewTable]);
+  }, [viewState, restaurantFloorBounds, isLocked, createNewItem]);
 
   // Enhanced keyboard shortcuts including lock toggle
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Delete table (only when unlocked)
-      if (e.key === "Delete" && state.selectedTable && !isLocked) {
-        dispatch({ type: "DELETE_TABLE", payload: { tableId: state.selectedTable } });
+      // Delete item (only when unlocked)
+      if (e.key === "Delete" && state.selectedItem && !isLocked) {
+        dispatch({ type: "DELETE_ITEM", payload: { itemId: state.selectedItem } });
       }
       // Toggle lock with Ctrl+L
       if (e.ctrlKey && e.key === 'l') {
         e.preventDefault();
-        setIsLocked(!isLocked);
+        toggleFloorLock(!isLocked)
       }
       // Escape to clear selection
       if (e.key === "Escape") {
-        dispatch({ type: "SELECT_TABLE", payload: { tableId: null } });
+        dispatch({ type: "SELECT_ITEM", payload: { itemId: null } });
       }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [state.selectedTable, dispatch, isLocked]);
+  }, [state.selectedItem, dispatch, isLocked, toggleFloorLock]);
 
   // Register touch drop handler
   useEffect(() => {
@@ -375,10 +382,10 @@ export default function EnhancedRestaurantCanvas({ width, height, onTouchDropRea
         <CanvasHeader
           floorDimensions={floorDimensions}
           viewScale={viewState.scale}
-          tablesCount={tables.length}
-          visibleTablesCount={visibleTables.length}
+          itemsCount={items.length}
+          visibleItemsCount={visibleItems.length}
           isLocked={isLocked}
-          onToggleLock={() => setIsLocked(!isLocked)}
+          onToggleLock={() => toggleFloorLock(!isLocked)}
           showSettings={showSettings}
           onToggleSettings={() => setShowSettings(!showSettings)}
         />
@@ -389,8 +396,8 @@ export default function EnhancedRestaurantCanvas({ width, height, onTouchDropRea
           onWidthChange={adjustFloorWidth}
           onHeightChange={adjustFloorHeight}
           showSettings={showSettings}
-          tablesCount={tables.length}
-          visibleTablesCount={visibleTables.length}
+          itemsCount={items.length}
+          visibleItemsCount={visibleItems.length}
           viewScale={viewState.scale}
           onToggleSettings={() => setShowSettings(!showSettings)}
         />
@@ -430,15 +437,15 @@ export default function EnhancedRestaurantCanvas({ width, height, onTouchDropRea
               {/* Grid Component */}
               <VirtualGrid />
 
-              {/* Enhanced Tables with Lock State */}
-              {visibleTables.map((table) => (
-                <TableComponent
-                  key={table.id}
-                  table={table}
-                  isSelected={state.selectedTable === table.id}
+              {/* Enhanced Items with Lock State */}
+              {visibleItems.map((item) => (
+                <LayoutItemComponent
+                  key={item.id}
+                  layoutItem={item}
+                  isSelected={state.selectedItem === item.id}
                   isLocked={isLocked}
-                  onSelect={selectHandlers.get(table.id)!}
-                  onUpdate={updateHandlers.get(table.id)!}
+                  onSelect={selectHandlers.get(item.id)!}
+                  onUpdate={updateHandlers.get(item.id)!}
                 />
               ))}
             </Layer>

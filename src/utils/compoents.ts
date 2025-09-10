@@ -7,7 +7,7 @@ export type SvgEntry = {
 };
 
 // --- SVG Path data for different table types (now with entry-gate and exit-gate) ---
-export const TABLE_SVG_PATHS: Record<string,SvgEntry> = {
+export const LAYOUT_ITEM_SVG_PATHS: Record<string,SvgEntry> = {
     "table-2": {
         path: "M51 1 C78.6142 1 101 23.3858 101 51 C101 78.6142 78.6142 101 51 101 C23.3858 101 1 78.6142 1 51 C1 23.3858 23.3858 1 51 1 Z M51 16 C70.3299 16 86 31.6701 86 51 C86 70.3299 70.3299 86 51 86 C31.6701 86 16 70.3299 16 51 C16 31.6701 31.6701 16 51 16 Z M51 21 C67.5685 21 81 34.4315 81 51 C81 67.5685 67.5685 81 51 81 C34.4315 81 21 67.5685 21 51 C21 34.4315 34.4315 21 51 21 Z",
         viewBox: "0 0 102 102",
@@ -99,4 +99,4 @@ export const TABLE_SVG_PATHS: Record<string,SvgEntry> = {
 } as const satisfies Record<string, SvgEntry>; // helpful TS inference
 
 // --- helper type for keys ---
-export type SvgKey = keyof typeof TABLE_SVG_PATHS;
+export type SvgKey = keyof typeof LAYOUT_ITEM_SVG_PATHS;

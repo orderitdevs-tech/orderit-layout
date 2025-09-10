@@ -1,42 +1,42 @@
-// hooks/useTableManager.ts
+// hooks/useItemManager.ts
 import { useMemo } from 'react';
-import {CanvasBounds } from '@/types/canvas';
+import { CanvasBounds } from '@/types/canvas';
 import { constrainToCanvas } from '../utils/canvasUtils';
-import { TableItem } from '@/types/restaurant';
+import { LayoutItem } from '@/types/restaurant';
 
-interface UseTableManagerProps {
-    tables: TableItem[];
+interface UseItemManagerProps {
+    items: LayoutItem[];
     canvasBounds: CanvasBounds;
     dispatch: (action: any) => void;
     isLocked: boolean;
 }
 
-export function useTableManager({ tables, canvasBounds, dispatch, isLocked }: UseTableManagerProps) {
+export function useItemManager({ items, canvasBounds, dispatch, isLocked }: UseItemManagerProps) {
     return useMemo(() => {
         const selectHandlers = new Map<string, () => void>();
         const updateHandlers = new Map<string, (pos: { x: number; y: number }) => void>();
 
-        tables.forEach(table => {
-            selectHandlers.set(table.id, () => {
-                dispatch({ type: "SELECT_TABLE", payload: { tableId: table.id } });
+        items.forEach(item => {
+            selectHandlers.set(item.id, () => {
+                dispatch({ type: "SELECT_ITEM", payload: { itemId: item.id } });
             });
 
-            updateHandlers.set(table.id, (position) => {
+            updateHandlers.set(item.id, (position) => {
                 // Don't update position if locked
                 if (isLocked) return;
 
                 const constrainedPosition = constrainToCanvas(
                     position,
-                    { width: table.width, height: table.height },
+                    { width: item.width, height: item.height },
                     canvasBounds
                 );
                 dispatch({
-                    type: "UPDATE_TABLE",
-                    payload: { tableId: table.id, updates: constrainedPosition }
+                    type: "UPDATE_ITEM",
+                    payload: { itemId: item.id, updates: constrainedPosition }
                 });
             });
         });
 
         return { selectHandlers, updateHandlers };
-    }, [tables, dispatch, canvasBounds, isLocked]);
+    }, [items, dispatch, canvasBounds, isLocked]);
 }

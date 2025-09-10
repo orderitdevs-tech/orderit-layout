@@ -37,8 +37,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { useAtom } from "jotai";
-import { lockAtom } from "@/atom/atom";
+
 
 const statusConfig = {
   free: {
@@ -134,12 +133,13 @@ const itemVariants = {
 };
 
 export default function PropertiesPanel() {
-  const { state, dispatch, getCurrentFloorTables } = useRestaurant();
-  const [isLocked] = useAtom(lockAtom);
+  const { state, dispatch, getCurrentFloorItems } = useRestaurant();
+  const isLocked = state.layout.floor.isLocked;
 
-  const selectedTable = getCurrentFloorTables().find(
-    (table) => table.id === state.selectedTable
-  );
+  // Get the selected item using state.selectedItem
+  const selectedItem = state.selectedItem ?
+    getCurrentFloorItems().find((item) => item.id === state.selectedItem) :
+    null;
 
   const [formData, setFormData] = useState({
     tableNumber: "",
@@ -151,113 +151,115 @@ export default function PropertiesPanel() {
   const [rotation, setRotation] = useState(0);
 
   useEffect(() => {
-    if (selectedTable) {
+    if (selectedItem) {
       setFormData({
-        tableNumber: selectedTable.tableNumber || "",
-        description: selectedTable.description || "",
-        tableType: selectedTable.tableType || "regular",
+        tableNumber: selectedItem.tableNumber || "",
+        description: selectedItem.description || "",
+        tableType: selectedItem.tableType || "regular",
       });
-      setPosition({ x: selectedTable.x, y: selectedTable.y });
-      setRotation(selectedTable.rotation);
+      setPosition({ x: selectedItem.x, y: selectedItem.y });
+      setRotation(selectedItem.rotation || 0);
     }
-  }, [selectedTable]);
+  }, [selectedItem]);
 
   const handleClose = () => {
-    dispatch({ type: "SELECT_TABLE", payload: { tableId: null } });
+    dispatch({ type: "SELECT_ITEM", payload: { itemId: null } });
   };
 
   const handleInputChange = (field: string, value: string) => {
-    if (isLocked) return; // Lock all input changes
+    if (isLocked || !selectedItem) return;
 
     setFormData(prev => ({ ...prev, [field]: value }));
     dispatch({
-      type: "UPDATE_TABLE",
+      type: "UPDATE_ITEM",
       payload: {
-        tableId: selectedTable!.id,
+        itemId: selectedItem.id,
         updates: { [field]: value },
       },
     });
   };
 
   const handlePositionChange = (axis: 'x' | 'y', value: string) => {
-    if (isLocked) return; // Lock position changes
+    if (isLocked || !selectedItem) return;
 
     const numValue = parseInt(value) || 0;
     setPosition(prev => ({ ...prev, [axis]: numValue }));
     dispatch({
-      type: "UPDATE_TABLE",
+      type: "UPDATE_ITEM",
       payload: {
-        tableId: selectedTable!.id,
+        itemId: selectedItem.id,
         updates: { [axis]: numValue },
       },
     });
   };
 
   const handleRotationChange = (value: string) => {
-    if (isLocked) return; // Lock rotation changes
+    if (isLocked || !selectedItem) return;
 
     const numValue = parseInt(value) || 0;
     setRotation(numValue);
     dispatch({
-      type: "UPDATE_TABLE",
+      type: "UPDATE_ITEM",
       payload: {
-        tableId: selectedTable!.id,
+        itemId: selectedItem.id,
         updates: { rotation: numValue },
       },
     });
   };
 
   const handleStatusChange = (status: TableStatus) => {
+    if (!selectedItem) return;
+
     // Status changes are NOT locked - always allowed
     dispatch({
-      type: "UPDATE_TABLE",
+      type: "UPDATE_ITEM",
       payload: {
-        tableId: selectedTable!.id,
+        itemId: selectedItem.id,
         updates: { status },
       },
     });
   };
 
   const handleTableTypeChange = (tableType: TableType) => {
-    if (isLocked) return; // Lock table type changes
+    if (isLocked || !selectedItem) return;
 
     setFormData(prev => ({ ...prev, tableType }));
     dispatch({
-      type: "UPDATE_TABLE",
+      type: "UPDATE_ITEM",
       payload: {
-        tableId: selectedTable!.id,
+        itemId: selectedItem.id,
         updates: { tableType },
       },
     });
   };
 
   const handleRotate = () => {
-    if (isLocked) return; // Lock rotation button
+    if (isLocked || !selectedItem) return;
 
     const newRotation = (rotation + 90) % 360;
     setRotation(newRotation);
     dispatch({
-      type: "UPDATE_TABLE",
+      type: "UPDATE_ITEM",
       payload: {
-        tableId: selectedTable!.id,
+        itemId: selectedItem.id,
         updates: { rotation: newRotation },
       },
     });
   };
 
   const handleDelete = () => {
-    if (isLocked) return; // Lock delete action
+    if (isLocked || !selectedItem) return;
 
     dispatch({
-      type: "DELETE_TABLE",
-      payload: { tableId: selectedTable!.id },
+      type: "DELETE_ITEM",
+      payload: { itemId: selectedItem.id },
     });
   };
 
-  const isTable = selectedTable?.type.startsWith("table-");
-  const ItemIcon = selectedTable ? getItemIcon(selectedTable.type) : Users;
+  const isTable = selectedItem?.type.startsWith("table-");
+  const ItemIcon = selectedItem ? getItemIcon(selectedItem.type) : Users;
 
-  if (!selectedTable) {
+  if (!selectedItem) {
     return (
       <motion.div
         variants={containerVariants}
@@ -310,7 +312,7 @@ export default function PropertiesPanel() {
     <TooltipProvider>
       <AnimatePresence mode="wait">
         <motion.div
-          key={selectedTable.id}
+          key={selectedItem.id}
           variants={containerVariants}
           initial="hidden"
           animate="visible"
@@ -337,7 +339,7 @@ export default function PropertiesPanel() {
                     Properties
                   </h2>
                   <p className="text-sm text-muted-foreground">
-                    {getItemDisplayName(selectedTable.type)}
+                    {getItemDisplayName(selectedItem.type)}
                   </p>
                 </div>
               </div>
@@ -386,9 +388,9 @@ export default function PropertiesPanel() {
                       <Label className="text-sm font-medium">Item Type</Label>
                       <div className="flex items-center gap-3 p-4 bg-muted/50 rounded-lg border border-border/50">
                         <ItemIcon className="w-5 h-5 text-primary" />
-                        <span className="text-sm font-medium">{getItemDisplayName(selectedTable.type)}</span>
+                        <span className="text-sm font-medium">{getItemDisplayName(selectedItem.type)}</span>
                         <Badge variant="secondary" className="ml-auto">
-                          {isTable ? `${selectedTable.type.replace("table-", "")} seats` : "Facility"}
+                          {isTable ? `${selectedItem.type.replace("table-", "")} seats` : "Facility"}
                         </Badge>
                       </div>
                     </div>
@@ -532,7 +534,7 @@ export default function PropertiesPanel() {
                       <div className="grid gap-3">
                         {statuses.map((status, index) => {
                           const config = statusConfig[status];
-                          const isSelected = selectedTable.status === status;
+                          const isSelected = selectedItem.status === status;
 
                           return (
                             <motion.div

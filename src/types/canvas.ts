@@ -1,6 +1,6 @@
 // types/restaurant.ts
 
-import { TableItem } from "./restaurant";
+import { LayoutItem } from "./restaurant";
 
 export interface FloorDimensions {
     width: number;
@@ -30,7 +30,7 @@ export interface CanvasBounds {
 export interface PerformanceContextType {
     viewport: Viewport;
     scale: number;
-    isTableVisible: (table: TableItem) => boolean;
+    isLayoutItemVisible: (layoutItem: LayoutItem) => boolean;
     canvasBounds: CanvasBounds;
 }
 
@@ -40,8 +40,8 @@ export interface CanvasProps {
     onTouchDropReady?: (handler: (config: any, position: { x: number; y: number }) => void) => void;
 }
 
-export interface TableComponentProps {
-    table: TableItem;
+export interface LayoutItemComponentProps {
+    layoutItem: LayoutItem;
     isSelected: boolean;
     isLocked: boolean;
     onSelect: () => void;
@@ -54,20 +54,20 @@ export interface FloorControlsProps {
     onHeightChange: (delta: number) => void;
     showSettings: boolean;
     onToggleSettings: () => void;
-    tablesCount: number;
-    visibleTablesCount: number;
+    itemsCount: number;
+    visibleItemsCount: number;
     viewScale: number;
 }
 
 export interface HeaderProps {
-    floorDimensions: FloorDimensions;
-    viewScale: number;
-    tablesCount: number;
-    visibleTablesCount: number;
-    isLocked: boolean;
-    onToggleLock: () => void;
-    showSettings: boolean;
-    onToggleSettings: () => void;
+  floorDimensions: { width: number; height: number };
+  viewScale: number;
+  itemsCount: number; 
+  visibleItemsCount: number; 
+  isLocked: boolean;
+  onToggleLock: () => void;
+  showSettings: boolean;
+  onToggleSettings: () => void;
 }
 
 export interface LockButtonProps {
