@@ -27,6 +27,9 @@ const RoomResizeHandles: React.FC<RoomResizeHandlesProps> = memo(function RoomRe
     const isResizingRef = useRef<'right' | 'bottom' | 'corner' | null>(null);
 
     const handleResizeStart = useCallback((direction: 'right' | 'bottom' | 'corner', e: any) => {
+        // Don't allow resize if locked
+        if (isLocked) return;
+
         // Aggressively prevent all event propagation
         e.evt.stopPropagation();
         e.evt.stopImmediatePropagation();
@@ -113,11 +116,12 @@ const RoomResizeHandles: React.FC<RoomResizeHandlesProps> = memo(function RoomRe
                     stage.draggable(true);
                 }
 
-                // Re-enable room group dragging if it exists
+                // FIXED: Only re-enable room group dragging if the floor is not locked
                 const roomGroup = e.target.getParent()?.getParent();
-                if (roomGroup) {
+                if (roomGroup && !isLocked) {
                     roomGroup.draggable(true);
                 }
+                // If the floor is locked, keep the room group draggable false
             }, 100);
 
             // Remove event listeners
@@ -128,7 +132,7 @@ const RoomResizeHandles: React.FC<RoomResizeHandlesProps> = memo(function RoomRe
         // Add event listeners with capture to intercept all mouse events
         document.addEventListener('mousemove', handleMouseMove, { capture: true, passive: false });
         document.addEventListener('mouseup', handleMouseUp, { capture: true, passive: false });
-    }, [room.width, room.height, scale, onResize]);
+    }, [room.width, room.height, scale, onResize, isLocked]); // Added isLocked to dependencies
 
     // Don't render handles if not selected, locked, or zoomed out too far
     if (!isSelected || isLocked || scale < 0.3) {

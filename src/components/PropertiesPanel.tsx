@@ -744,31 +744,33 @@ export default function PropertiesPanel() {
                       </div>
                     </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="rotation" className="text-sm font-medium">Rotation (degrees)</Label>
-                      <div className="flex gap-3 justify-center items-center">
-                        <Input
-                          id="rotation"
-                          type="number"
-                          value={rotation}
-                          onChange={(e) => handleRotationChange(e.target.value)}
-                          min="0"
-                          max="359"
-                          className="flex-1 transition-all focus:ring-2 focus:ring-primary/20"
-                          placeholder="0-359"
-                          disabled={isLocked}
-                        />
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={handleRotate}
-                          className={`hover:bg-primary/10 hover:border-primary/30 transition-all ${isLocked ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-                          disabled={isLocked}
-                        >
-                          <RotateCw className="w-4 h-4" />
-                        </Button>
+                    {
+                      selectedItem.type !== 'room' && <div className="space-y-2">
+                        <Label htmlFor="rotation" className="text-sm font-medium">Rotation (degrees)</Label>
+                        <div className="flex gap-3 justify-center items-center">
+                          <Input
+                            id="rotation"
+                            type="number"
+                            value={rotation}
+                            onChange={(e) => handleRotationChange(e.target.value)}
+                            min="0"
+                            max="359"
+                            className="flex-1 transition-all focus:ring-2 focus:ring-primary/20"
+                            placeholder="0-359"
+                            disabled={isLocked}
+                          />
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={handleRotate}
+                            className={`hover:bg-primary/10 hover:border-primary/30 transition-all ${isLocked ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                            disabled={isLocked}
+                          >
+                            <RotateCw className="w-4 h-4" />
+                          </Button>
+                        </div>
                       </div>
-                    </div>
+                    }
                   </CardContent>
                 </Card>
               </motion.div>

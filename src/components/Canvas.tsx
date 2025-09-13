@@ -155,15 +155,15 @@ export default function RestaurantCanvas({ width, height, onTouchDropReady }: Ca
   }), [viewState, width, height, headerHeight]);
 
   // Item visibility
-  const isLayoutItemVisible = useCallback((item: LayoutItem) => {
-    const buffer = 100;
+   const isLayoutItemVisible = useCallback((item: LayoutItem) => {
+    const buffer = 150 * (1 / viewState.scale);
     return (
-      item.x > viewport.x - buffer &&
+      item.x + item.width > viewport.x - buffer &&
       item.x < viewport.x + viewport.width + buffer &&
-      item.y > viewport.y - buffer &&
+      item.y + item.height > viewport.y - buffer &&
       item.y < viewport.y + viewport.height + buffer
     );
-  }, [viewport]);
+  }, [viewport, viewState.scale]);
 
   // Special handling for room items - they should always be visible with their room
   const isRoomItemVisible = useCallback((room: RoomItem) => {

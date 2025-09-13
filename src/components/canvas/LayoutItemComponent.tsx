@@ -1,5 +1,5 @@
 // components/LayoutItemComponent.tsx
-import React, { useRef, useCallback, useMemo, useContext, memo } from 'react';
+import React, { useRef, useCallback, useMemo, useContext, memo, useEffect } from 'react';
 import { Group, Rect, Text, Path, Image as KonvaImage } from 'react-konva';
 import useImage from 'use-image';
 import { LayoutItemComponentProps } from '@/types/canvas';
@@ -47,6 +47,21 @@ const LayoutItemComponent: React.FC<LayoutItemComponentProps> = memo(function La
     const mouseDownPosRef = useRef<{ x: number; y: number } | null>(null);
     const initialPosRef = useRef<{ x: number; y: number } | null>(null);
 
+    // CRITICAL FIX: Force disable dragging whenever lock state changes
+    useEffect(() => {
+        if (groupRef.current) {
+            // Always ensure draggable is false since we handle dragging manually
+            groupRef.current.draggable(false);
+            
+            // If locked, also clear any ongoing drag state
+            if (isLocked) {
+                isDraggingRef.current = false;
+                mouseDownPosRef.current = null;
+                initialPosRef.current = null;
+            }
+        }
+    }, [isLocked, item.id]); // Re-run when lock state changes or item changes
+
     // Determine if this is a table (show SVG) or other item (show image)
     const isTable = isTableItem(item);
     const isRoom = isRoomItem(item);
@@ -75,6 +90,13 @@ const LayoutItemComponent: React.FC<LayoutItemComponentProps> = memo(function La
     const lodLevel = getLodLevel(scale);
 
     const handleMouseDown = useCallback((e: any) => {
+        // CRITICAL: Check lock state at the moment of mouse down
+        if (isLocked) {
+            // If locked, only allow selection, prevent all dragging
+            onSelect();
+            return;
+        }
+
         // Check if we're currently resizing - if so, don't handle this event
         const stage = e.target.getStage();
         if (stage?.getAttr('isResizing')) {
@@ -84,11 +106,8 @@ const LayoutItemComponent: React.FC<LayoutItemComponentProps> = memo(function La
         e.evt.preventDefault();
         e.evt.stopPropagation();
 
-        // Always allow selection, even when locked
+        // Always allow selection
         onSelect();
-
-        // If locked, don't allow dragging
-        if (isLocked) return;
 
         const pointer = stage?.getPointerPosition();
 
@@ -106,6 +125,9 @@ const LayoutItemComponent: React.FC<LayoutItemComponentProps> = memo(function La
 
             // Add mouse move and up listeners to window
             const handleMouseMove = () => {
+                // Double-check lock state during mouse move
+                if (isLocked) return;
+                
                 // Double check we're not resizing during mouse move
                 if (stage?.getAttr('isResizing')) {
                     return;
@@ -183,6 +205,9 @@ const LayoutItemComponent: React.FC<LayoutItemComponentProps> = memo(function La
             };
 
             const handleMouseUp = () => {
+                // Final check of lock state on mouse up
+                if (isLocked) return;
+                
                 // Check one more time if we're resizing
                 if (stage?.getAttr('isResizing')) {
                     // Clean up but don't update position
@@ -216,7 +241,7 @@ const LayoutItemComponent: React.FC<LayoutItemComponentProps> = memo(function La
             window.addEventListener('mousemove', handleMouseMove);
             window.addEventListener('mouseup', handleMouseUp);
         }
-    }, [item, onSelect, onUpdate, scale, canvasBounds, isLocked, rooms]); // Added rooms to dependencies
+    }, [item, onSelect, onUpdate, scale, canvasBounds, isLocked, rooms]); // isLocked is already in dependencies
 
     // Cursor style based on lock state
     const cursorStyle = isLocked ? 'pointer' : 'move';
@@ -250,7 +275,7 @@ const LayoutItemComponent: React.FC<LayoutItemComponentProps> = memo(function La
                 x={item.x}
                 y={item.y}
                 rotation={item.rotation}
-                draggable={false}
+                draggable={false} // Always false - we handle dragging manually
                 onMouseDown={handleMouseDown}
                 onTouchStart={handleMouseDown}
                 cursor={cursorStyle}
@@ -264,7 +289,7 @@ const LayoutItemComponent: React.FC<LayoutItemComponentProps> = memo(function La
                         stroke={isSelected ? "#3b82f6" : "#fdba74"}
                         strokeWidth={isSelected ? 2 : 1}
                         cornerRadius={6}
-                        dash={lodLevel === 'high' ? [4, 4] : [6, 3]}
+                        dash={[4, 4]}
                     />
                 )}
 
@@ -343,7 +368,7 @@ const LayoutItemComponent: React.FC<LayoutItemComponentProps> = memo(function La
             x={item.x}
             y={item.y}
             rotation={item.rotation}
-            draggable={false}
+            draggable={false} // Always false - we handle dragging manually
             onMouseDown={handleMouseDown}
             onTouchStart={handleMouseDown}
             cursor={cursorStyle}
@@ -487,7 +512,6 @@ const LayoutItemComponent: React.FC<LayoutItemComponentProps> = memo(function La
                     fill="rgba(16, 185, 129, 0.1)"
                 />
             )}
-
 
             {/* Lock indicator - only at high detail */}
             {isLocked && isSelected && lodLevel === 'high' && (
