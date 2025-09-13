@@ -21,13 +21,19 @@ import {
   Crown,
   Sofa,
   Wine,
-  TreePine,
   Lock,
   Info,
-  TableProperties
+  TableProperties,
+  Home,
+  Building,
+  Shield,
+  Sun,
+  Mountain,
+  Baby,
+  AlertTriangle,
 } from "lucide-react";
 import { useRestaurant } from "../context/RestaurantContext";
-import { TableStatus, TableType } from "../types/restaurant";
+import { SeatingStatus, RoomType, LayoutItem, TableItem, UtilityItem, RoomItem } from "../types/restaurant";
 import { TABLE_STATUS_COLORS } from "../utils/tableConfig";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -37,10 +43,10 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-
+import { Gi3dStairs, GiElevator } from "react-icons/gi";
 
 const statusConfig = {
-  free: {
+  available: {
     icon: CheckCircle2,
     label: "Available",
     description: "Ready for guests",
@@ -67,42 +73,54 @@ const statusConfig = {
   "out-of-service": {
     icon: XCircle,
     label: "Out of Service",
-    description: "Temporarily unavailable",
+    description: "Unavailable",
     color: "bg-slate-500/10 text-slate-600 border-slate-200 hover:bg-slate-500/20"
   },
 };
 
-const tableTypeConfig = {
-  regular: { icon: Users, label: "Regular Table", description: "Standard dining table" },
-  vip: { icon: Crown, label: "VIP Table", description: "Premium experience" },
-  booth: { icon: Sofa, label: "Booth Seating", description: "Private booth" },
-  bar: { icon: Wine, label: "Bar Table", description: "Bar-height seating" },
-  outdoor: { icon: TreePine, label: "Outdoor Table", description: "Patio/terrace seating" },
-  private: { icon: Lock, label: "Private Dining", description: "Exclusive dining room" }
+const areaTypeConfig = {
+  booth_area: { icon: Sofa, label: "Booth Area", description: "Cozy booth seating section" },
+  family_section: { icon: Baby, label: "Family Section", description: "Family-friendly dining area" },
+  cafe_corner: { icon: Coffee, label: "Cafe Corner", description: "Casual coffee area with small tables" },
+  bar_area: { icon: Wine, label: "Bar Area", description: "Bar and lounge space" },
+  outdoor_patio: { icon: Sun, label: "Outdoor Patio", description: "Open-air dining area" },
+  rooftop: { icon: Mountain, label: "Rooftop", description: "Elevated outdoor space" },
+  banquet: { icon: Building, label: "Banquet Hall", description: "Large event space" },
+  private: { icon: Shield, label: "Private Dining", description: "Exclusive dining area" },
+  vip: { icon: Crown, label: "VIP Area", description: "Premium dining section" }
 };
 
 const getItemIcon = (type: string) => {
   if (type.startsWith("table-")) return Users;
+  if (type === "room") return Home;
   switch (type) {
     case "washroom": return WashingMachine;
     case "counter": return Coffee;
     case "entry-gate": return LogIn;
     case "exit-gate": return LogOut;
+    case "elevator": return GiElevator;
+    case "stair": return Gi3dStairs;
     default: return Users;
   }
 };
 
-const getItemDisplayName = (type: string) => {
-  if (type.startsWith("table-")) {
-    const seats = type.replace("table-", "");
+const getItemDisplayName = (item: LayoutItem) => {
+  if (item.type.startsWith("table-")) {
+    const seats = item.type.replace("table-", "");
     return `${seats} Seater Table`;
   }
-  switch (type) {
+  if (item.type === "room") {
+    const roomItem = item as RoomItem;
+    return roomItem.name || areaTypeConfig[roomItem.roomType]?.label || "Area";
+  }
+  switch (item.type) {
     case "washroom": return "Washroom";
     case "counter": return "Service Counter";
     case "entry-gate": return "Entry Gate";
     case "exit-gate": return "Exit Gate";
-    default: return type;
+    case "elevator": return "Elevator";
+    case "stair": return "Staircase";
+    default: return item.type;
   }
 };
 
@@ -133,34 +151,115 @@ const itemVariants = {
 };
 
 export default function PropertiesPanel() {
-  const { state, dispatch, getCurrentFloorItems } = useRestaurant();
+  const { state, dispatch, getItemById } = useRestaurant();
   const isLocked = state.layout.floor.isLocked;
 
   // Get the selected item using state.selectedItem
-  const selectedItem = state.selectedItem ?
-    getCurrentFloorItems().find((item) => item.id === state.selectedItem) :
-    null;
+  const selectedItem = state.selectedItem ? getItemById(state.selectedItem) : null;
 
   const [formData, setFormData] = useState({
     tableNumber: "",
+    name: "",
     description: "",
-    tableType: "regular" as TableType,
+    roomType: "booth_area" as RoomType,
   });
 
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [rotation, setRotation] = useState(0);
+  const [invalidStatusAttempt, setInvalidStatusAttempt] = useState<string | null>(null);
+  const [validationError, setValidationError] = useState<string | null>(null);
 
   useEffect(() => {
     if (selectedItem) {
-      setFormData({
-        tableNumber: selectedItem.tableNumber || "",
-        description: selectedItem.description || "",
-        tableType: selectedItem.tableType || "regular",
-      });
+      // Handle different item types
+      if (selectedItem.type.startsWith("table-")) {
+        const tableItem = selectedItem as TableItem;
+        setFormData({
+          tableNumber: tableItem.tableNumber || "",
+          name: "",
+          description: "",
+          roomType: "booth_area",
+        });
+      } else if (selectedItem.type === "room") {
+        const roomItem = selectedItem as RoomItem;
+        setFormData({
+          tableNumber: "",
+          name: roomItem.name || "",
+          description: roomItem.description || "",
+          roomType: roomItem.roomType || "booth_area",
+        });
+      } else {
+        const utilityItem = selectedItem as UtilityItem;
+        setFormData({
+          tableNumber: "",
+          name: utilityItem.name || "",
+          description: utilityItem.description || "",
+          roomType: "booth_area",
+        });
+      }
+
       setPosition({ x: selectedItem.x, y: selectedItem.y });
       setRotation(selectedItem.rotation || 0);
     }
   }, [selectedItem]);
+
+  // Validation functions
+  const validateTableNumber = (value: string): string | null => {
+    if (!value) return "Table number is required";
+
+    // Ensure it starts with 'T'
+    if (!value.startsWith('T')) {
+      return "Table number must start with 'T'";
+    }
+
+    // Check for duplicates
+    const isDuplicate = state.layout.floor.layoutItems.some(item =>
+      item.id !== selectedItem?.id &&
+      item.type.startsWith("table-") &&
+      (item as TableItem).tableNumber === value
+    );
+
+    if (isDuplicate) {
+      return "This table number already exists";
+    }
+
+    return null;
+  };
+
+  const validateRoomName = (value: string): string | null => {
+    if (!value.trim()) return "Area name is required";
+
+    // Check for duplicates
+    const isDuplicate = state.layout.floor.layoutItems.some(item =>
+      item.id !== selectedItem?.id &&
+      item.type === "room" &&
+      (item as RoomItem).name?.toLowerCase().trim() === value.toLowerCase().trim()
+    );
+
+    if (isDuplicate) {
+      return "This area name already exists";
+    }
+
+    return null;
+  };
+
+  const validateUtilityName = (value: string): string | null => {
+    if (!value.trim()) return "Item name is required";
+
+    // Check for duplicates
+    const isDuplicate = state.layout.floor.layoutItems.some(item =>
+      item.id !== selectedItem?.id &&
+      !item.type.startsWith("table-") &&
+      item.type !== "room" &&
+      (item as UtilityItem).name?.toLowerCase().trim() === value.toLowerCase().trim()
+    );
+
+    if (isDuplicate) {
+      return "This item name already exists";
+    }
+
+    return null;
+  };
 
   const handleClose = () => {
     dispatch({ type: "SELECT_ITEM", payload: { itemId: null } });
@@ -169,7 +268,42 @@ export default function PropertiesPanel() {
   const handleInputChange = (field: string, value: string) => {
     if (isLocked || !selectedItem) return;
 
-    setFormData(prev => ({ ...prev, [field]: value }));
+    // Clear validation error when user starts typing
+    setValidationError(null);
+
+    // Handle table number special case
+    if (field === "tableNumber") {
+      // Ensure 'T' prefix is preserved
+      if (value && !value.startsWith('T')) {
+        value = 'T' + value.replace(/^T*/g, ''); // Remove any existing T's and add one
+      }
+
+      setFormData(prev => ({ ...prev, [field]: value }));
+
+      const error = validateTableNumber(value);
+      if (error) {
+        setValidationError(error);
+        return; // Don't update the store if validation fails
+      }
+    } else if (field === "name") {
+      setFormData(prev => ({ ...prev, [field]: value }));
+
+      let error = null;
+      if (selectedItem.type === "room") {
+        error = validateRoomName(value);
+      } else {
+        error = validateUtilityName(value);
+      }
+
+      if (error) {
+        setValidationError(error);
+        return; // Don't update the store if validation fails
+      }
+    } else {
+      setFormData(prev => ({ ...prev, [field]: value }));
+    }
+
+    // Update the store only if validation passes
     dispatch({
       type: "UPDATE_ITEM",
       payload: {
@@ -207,10 +341,42 @@ export default function PropertiesPanel() {
     });
   };
 
-  const handleStatusChange = (status: TableStatus) => {
+  const handleStatusChange = (status: SeatingStatus) => {
     if (!selectedItem) return;
 
-    // Status changes are NOT locked - always allowed
+    const isTable = selectedItem.type.startsWith("table-");
+    const isArea = selectedItem.type === "room";
+
+    if (!isTable && !isArea) return;
+
+    // Validation logic for table status changes
+    if (isTable) {
+      const tableItem = selectedItem as TableItem;
+
+      // If table is inside an area, check area status restrictions
+      if (tableItem.roomId) {
+        const containingArea = getItemById(tableItem.roomId) as RoomItem;
+
+        if (containingArea && containingArea.status !== "available") {
+          // If area is not available, table can only be set to same status or more restrictive
+          const restrictiveOrder = ["available", "reserved", "occupied", "maintenance", "out-of-service"];
+          const areaIndex = restrictiveOrder.indexOf(containingArea.status);
+          const newStatusIndex = restrictiveOrder.indexOf(status);
+
+          if (newStatusIndex < areaIndex && status !== containingArea.status) {
+            // Show visual feedback for invalid change
+            setInvalidStatusAttempt(status);
+            setTimeout(() => setInvalidStatusAttempt(null), 2000);
+            return;
+          }
+        }
+      }
+    }
+
+    // Clear any previous invalid attempts
+    setInvalidStatusAttempt(null);
+
+    // Status changes are NOT locked - always allowed with validation
     dispatch({
       type: "UPDATE_ITEM",
       payload: {
@@ -218,17 +384,43 @@ export default function PropertiesPanel() {
         updates: { status },
       },
     });
+
+    // If this is an area, propagate status to all contained tables
+    if (isArea) {
+      const areaItem = selectedItem as RoomItem;
+      areaItem.containedItems.forEach(containedItemId => {
+        const containedItem = getItemById(containedItemId);
+        if (containedItem && containedItem.type.startsWith("table-")) {
+          // Only change table status if new area status is more restrictive or same
+          const currentTableStatus = (containedItem as TableItem).status;
+          const restrictiveOrder = ["available", "reserved", "occupied", "maintenance", "out-of-service"];
+          const currentIndex = restrictiveOrder.indexOf(currentTableStatus);
+          const newIndex = restrictiveOrder.indexOf(status);
+
+          // Apply area status to table if area status is more restrictive or if area becomes available
+          if (status === "available" || newIndex >= currentIndex) {
+            dispatch({
+              type: "UPDATE_ITEM",
+              payload: {
+                itemId: containedItemId,
+                updates: { status },
+              },
+            });
+          }
+        }
+      });
+    }
   };
 
-  const handleTableTypeChange = (tableType: TableType) => {
-    if (isLocked || !selectedItem) return;
+  const handleAreaTypeChange = (roomType: RoomType) => {
+    if (isLocked || !selectedItem || selectedItem.type !== "room") return;
 
-    setFormData(prev => ({ ...prev, tableType }));
+    setFormData(prev => ({ ...prev, roomType }));
     dispatch({
       type: "UPDATE_ITEM",
       payload: {
         itemId: selectedItem.id,
-        updates: { tableType },
+        updates: { roomType },
       },
     });
   };
@@ -257,6 +449,7 @@ export default function PropertiesPanel() {
   };
 
   const isTable = selectedItem?.type.startsWith("table-");
+  const isArea = selectedItem?.type === "room";
   const ItemIcon = selectedItem ? getItemIcon(selectedItem.type) : Users;
 
   if (!selectedItem) {
@@ -282,7 +475,7 @@ export default function PropertiesPanel() {
                 No Item Selected
               </h3>
               <p className="text-sm text-muted-foreground leading-relaxed max-w-xs">
-                Select a table or item from the canvas to view and edit its properties
+                Select a table, area, or utility item from the canvas to view and edit its properties
               </p>
             </div>
           </motion.div>
@@ -291,21 +484,24 @@ export default function PropertiesPanel() {
     );
   }
 
-  const statuses: TableStatus[] = [
-    "free",
+  const statuses: SeatingStatus[] = [
+    "available",
     "occupied",
     "reserved",
     "maintenance",
     "out-of-service"
   ];
 
-  const tableTypes: TableType[] = [
-    "regular",
-    "vip",
-    "booth",
-    "bar",
-    "outdoor",
-    "private"
+  const areaTypes: RoomType[] = [
+    "booth_area",
+    "family_section",
+    "cafe_corner",
+    "bar_area",
+    "outdoor_patio",
+    "rooftop",
+    "banquet",
+    "private",
+    "vip"
   ];
 
   return (
@@ -339,7 +535,7 @@ export default function PropertiesPanel() {
                     Properties
                   </h2>
                   <p className="text-sm text-muted-foreground">
-                    {getItemDisplayName(selectedItem.type)}
+                    {getItemDisplayName(selectedItem)}
                   </p>
                 </div>
               </div>
@@ -356,7 +552,27 @@ export default function PropertiesPanel() {
 
           {/* Content */}
           <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-primary/20 scrollbar-track-transparent">
-            <div className="p-6 space-y-4 pb-24">
+            <div className="p-6 space-y-4 pb-32">
+              {/* Validation Error */}
+              <AnimatePresence>
+                {validationError && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                    className="p-3 bg-red-500/10 border border-red-200 rounded-lg"
+                  >
+                    <div className="flex items-center gap-2 text-red-600">
+                      <AlertTriangle className="w-4 h-4" />
+                      <div>
+                        <p className="text-sm font-medium">Validation Error</p>
+                        <p className="text-xs text-red-500">{validationError}</p>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
               {/* Basic Information */}
               <motion.div variants={itemVariants}>
                 <Card className={`border-border/50 bg-gradient-to-br from-card to-card/80 shadow-sm ${isLocked ? 'opacity-70' : ''}`}>
@@ -370,27 +586,45 @@ export default function PropertiesPanel() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-3">
+                    {/* Table Number / Name field */}
                     <div className="space-y-2">
-                      <Label htmlFor="tableNumber" className="text-sm font-medium">
-                        {isTable ? "Table Number" : "Item Label"}
+                      <Label htmlFor="itemIdentifier" className="text-sm font-medium">
+                        {isTable ? "Table Number" : isArea ? "Area Name" : "Item Name"}
+                        <span className="text-red-500 ml-1">*</span>
                       </Label>
                       <Input
-                        id="tableNumber"
-                        value={formData.tableNumber}
-                        onChange={(e) => handleInputChange("tableNumber", e.target.value)}
-                        placeholder={isTable ? "e.g., T-001" : "Enter label"}
-                        className="transition-all focus:ring-2 focus:ring-primary/20"
+                        id="itemIdentifier"
+                        value={isTable ? formData.tableNumber : formData.name}
+                        onChange={(e) => handleInputChange(isTable ? "tableNumber" : "name", e.target.value)}
+                        placeholder={
+                          isTable ? "e.g., T-001" :
+                            isArea ? "e.g., VIP Lounge" :
+                              "Enter name"
+                        }
+                        className={`transition-all focus:ring-2 focus:ring-primary/20 ${validationError ? 'border-red-300 focus:border-red-500 focus:ring-red-200' : ''
+                          }`}
                         disabled={isLocked}
                       />
+                      {isTable && (
+                        <p className="text-xs text-muted-foreground">
+                          {`Table number must start with 'T' and be unique`}
+                        </p>
+                      )}
                     </div>
 
+                    {/* Item Type Display */}
                     <div className="space-y-2">
                       <Label className="text-sm font-medium">Item Type</Label>
                       <div className="flex items-center gap-3 p-4 bg-muted/50 rounded-lg border border-border/50">
                         <ItemIcon className="w-5 h-5 text-primary" />
-                        <span className="text-sm font-medium">{getItemDisplayName(selectedItem.type)}</span>
+                        <span className="text-sm font-medium">{getItemDisplayName(selectedItem)}</span>
                         <Badge variant="secondary" className="ml-auto">
-                          {isTable ? `${selectedItem.type.replace("table-", "")} seats` : "Facility"}
+                          {isTable
+                            ? `${selectedItem.type.replace("table-", "")} seats`
+                            : isArea
+                              ? "Area"
+                              : "Utility"
+                          }
                         </Badge>
                       </div>
                     </div>
@@ -412,28 +646,32 @@ export default function PropertiesPanel() {
                         id="description"
                         value={formData.description}
                         onChange={(e) => handleInputChange("description", e.target.value)}
-                        placeholder={isTable ? "Special notes, dietary requirements, etc." : "Enter description..."}
+                        placeholder={
+                          isTable ? "Special notes, dietary requirements, etc." :
+                            isArea ? "Area description and features..." :
+                              "Enter description..."
+                        }
                         rows={3}
                         className="resize-none transition-all focus:ring-2 focus:ring-primary/20"
                         disabled={isLocked}
                       />
                     </div>
 
-                    {/* Table Type for tables */}
-                    {isTable && (
+                    {/* Area Type for areas */}
+                    {isArea && (
                       <div className="space-y-2">
-                        <Label className="text-sm font-medium">Table Category</Label>
+                        <Label className="text-sm font-medium">Area Type</Label>
                         <Select
-                          value={formData.tableType}
-                          onValueChange={handleTableTypeChange}
+                          value={formData.roomType}
+                          onValueChange={handleAreaTypeChange}
                           disabled={isLocked}
                         >
                           <SelectTrigger className={`transition-all focus:ring-2 focus:ring-primary/20 ${isLocked ? 'opacity-50 cursor-not-allowed' : ''}`}>
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            {tableTypes.map((type) => {
-                              const config = tableTypeConfig[type];
+                            {areaTypes.map((type) => {
+                              const config = areaTypeConfig[type];
                               return (
                                 <SelectItem key={type} value={type}>
                                   <div className="flex items-center gap-2 cursor-pointer">
@@ -445,6 +683,23 @@ export default function PropertiesPanel() {
                             })}
                           </SelectContent>
                         </Select>
+                      </div>
+                    )}
+
+                    {/* Area Info for areas */}
+                    {isArea && (
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium">Contained Items</Label>
+                        <div className="p-3 bg-muted/30 rounded-lg border border-border/30">
+                          <Badge variant="outline" className="text-xs">
+                            {(selectedItem as RoomItem).containedItems.length} items inside
+                          </Badge>
+                          {isArea && (selectedItem as RoomItem).containedItems.length > 0 && (
+                            <p className="text-xs text-muted-foreground mt-2">
+                              Status changes will apply to all contained tables
+                            </p>
+                          )}
+                        </div>
                       </div>
                     )}
                   </CardContent>
@@ -466,7 +721,7 @@ export default function PropertiesPanel() {
                   <CardContent className="space-y-5">
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="positionX" className="text-sm font-medium">X- Position</Label>
+                        <Label htmlFor="positionX" className="text-sm font-medium">X Position</Label>
                         <Input
                           id="positionX"
                           type="number"
@@ -477,7 +732,7 @@ export default function PropertiesPanel() {
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="positionY" className="text-sm font-medium">Y- Position</Label>
+                        <Label htmlFor="positionY" className="text-sm font-medium">Y Position</Label>
                         <Input
                           id="positionY"
                           type="number"
@@ -518,8 +773,8 @@ export default function PropertiesPanel() {
                 </Card>
               </motion.div>
 
-              {/* Enhanced Status - Only for tables - NOT LOCKED */}
-              {isTable && (
+              {/* Enhanced Status - For tables and areas - NOT LOCKED */}
+              {(isTable || isArea) && (
                 <motion.div variants={itemVariants}>
                   <Card className="border-border/50 bg-gradient-to-br from-card to-card/80 shadow-sm">
                     <CardHeader>
@@ -527,14 +782,83 @@ export default function PropertiesPanel() {
                         <div className="w-8 h-8 bg-amber-500/10 rounded-lg flex items-center justify-center">
                           <CheckCircle2 className="w-4 h-4 text-amber-600" />
                         </div>
-                        Table Status
+                        {isArea ? "Area Status" : "Table Status"}
+                        {isArea && (
+                          <Tooltip>
+                            <TooltipTrigger>
+                              <Info className="w-4 h-4 text-muted-foreground ml-1" />
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Changes will apply to all tables in this area</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        )}
                       </CardTitle>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="max-h-[400px] overflow-hidden">
+                      {/* Invalid Status Attempt Notification */}
+                      <AnimatePresence>
+                        {invalidStatusAttempt && (
+                          <motion.div
+                            initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                            className="mb-4 p-3 bg-red-500/10 border border-red-200 rounded-lg"
+                          >
+                            <div className="flex items-center gap-2 text-red-600">
+                              <XCircle className="w-4 h-4" />
+                              <div>
+                                <p className="text-sm font-medium">Invalid Status Change</p>
+                                <p className="text-xs text-red-500">
+                                  {`Cannot set table to "${statusConfig[invalidStatusAttempt as SeatingStatus]?.label}" - area status restricts this change.`}
+                                </p>
+                              </div>
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+
+                      {/* Show area context for tables */}
+                      {isTable && (selectedItem as TableItem).roomId && (
+                        <div className="mb-4 p-3 bg-blue-500/5 border border-blue-200 rounded-lg">
+                          <div className="flex items-center gap-2 text-blue-600">
+                            <Home className="w-4 h-4" />
+                            <div>
+                              <p className="text-sm font-medium">Inside Area</p>
+                              <p className="text-xs text-blue-500">
+                                {(() => {
+                                  const area = getItemById((selectedItem as TableItem).roomId!) as RoomItem;
+                                  return area ? `${area.name || 'Area'} (${statusConfig[area.status]?.label})` : 'Unknown Area';
+                                })()}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
                       <div className="grid gap-3">
                         {statuses.map((status, index) => {
                           const config = statusConfig[status];
-                          const isSelected = selectedItem.status === status;
+                          const currentStatus = (selectedItem as TableItem | RoomItem).status;
+                          const isSelected = currentStatus === status;
+
+                          // Check if status is disabled for table inside area
+                          let isDisabled = false;
+                          let disabledReason = "";
+
+                          if (isTable && (selectedItem as TableItem).roomId) {
+                            const containingArea = getItemById((selectedItem as TableItem).roomId!) as RoomItem;
+                            if (containingArea && containingArea.status !== "available") {
+                              const restrictiveOrder = ["available", "reserved", "occupied", "maintenance", "out-of-service"];
+                              const areaIndex = restrictiveOrder.indexOf(containingArea.status);
+                              const statusIndex = restrictiveOrder.indexOf(status);
+
+                              if (statusIndex < areaIndex && status !== containingArea.status) {
+                                isDisabled = true;
+                                disabledReason = `Area is ${statusConfig[containingArea.status]?.label}`;
+                              }
+                            }
+                          }
 
                           return (
                             <motion.div
@@ -548,40 +872,61 @@ export default function PropertiesPanel() {
                                 damping: 25
                               }}
                             >
-                              <Button
-                                variant={isSelected ? "default" : "outline"}
-                                className={`
-                                  w-full justify-start h-auto p-4 transition-all duration-300 ease-out cursor-pointer
-                                  ${!isSelected ? config.color : "bg-primary text-primary-foreground shadow-lg"}
-                                  hover:scale-[1.02] active:scale-[0.98]
-                                  ${isSelected ? "ring-2 ring-primary/20" : ""}
-                                `}
-                                onClick={() => handleStatusChange(status)}
-                              >
-                                <div className="flex items-center gap-4 w-full">
-                                  <div className={`
-                                    p-2 rounded-lg transition-colors duration-300
-                                    ${isSelected ? "bg-primary-foreground/20" : "bg-background/50"}
-                                  `}>
-                                    <config.icon className="w-4 h-4" />
-                                  </div>
-                                  <div className="flex-1 text-left">
-                                    <div className="font-medium">{config.label}</div>
-                                    <div className={`text-xs transition-colors duration-300 ${isSelected ? "text-primary-foreground/70" : "text-muted-foreground"
-                                      }`}>
-                                      {config.description}
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant={isSelected ? "default" : "outline"}
+                                    className={`
+                                      w-full justify-start h-auto p-4 transition-all duration-300 ease-out
+                                      ${isDisabled
+                                        ? 'opacity-50 cursor-not-allowed bg-muted/50 hover:bg-muted/50 hover:scale-100'
+                                        : 'cursor-pointer hover:scale-[1.02] active:scale-[0.98]'
+                                      }
+                                      ${!isSelected && !isDisabled ? config.color : ""}
+                                      ${isSelected ? "bg-primary text-primary-foreground shadow-lg ring-2 ring-primary/20" : ""}
+                                      ${invalidStatusAttempt === status ? "animate-pulse ring-2 ring-red-500/50" : ""}
+                                    `}
+                                    onClick={() => !isDisabled && handleStatusChange(status)}
+                                    disabled={isDisabled}
+                                  >
+                                    <div className="flex items-center gap-4 w-full">
+                                      <div className={`
+                                        p-2 rounded-lg transition-colors duration-300
+                                        ${isSelected ? "bg-primary-foreground/20" : "bg-background/50"}
+                                        ${isDisabled ? "opacity-70" : ""}
+                                      `}>
+                                        <config.icon className="w-4 h-4" />
+                                      </div>
+                                      <div className="flex-1 text-left">
+                                        <div className="font-medium">{config.label}</div>
+                                        <div className={`text-xs transition-colors duration-300 ${isSelected ? "text-primary-foreground/70" :
+                                          isDisabled ? "text-muted-foreground/70" : "text-muted-foreground"
+                                          }`}>
+                                          {config.description}
+                                        </div>
+                                      </div>
+                                      {isSelected && (
+                                        <motion.div
+                                          initial={{ scale: 0 }}
+                                          animate={{ scale: 1 }}
+                                          className="w-3 h-3 rounded-full"
+                                          style={{ backgroundColor: TABLE_STATUS_COLORS[status] || TABLE_STATUS_COLORS.available }}
+                                        />
+                                      )}
+                                      {isDisabled && (
+                                        <Lock className="w-3 h-3 text-muted-foreground/70" />
+                                      )}
                                     </div>
-                                  </div>
-                                  {isSelected && (
-                                    <motion.div
-                                      initial={{ scale: 0 }}
-                                      animate={{ scale: 1 }}
-                                      className="w-3 h-3 rounded-full"
-                                      style={{ backgroundColor: TABLE_STATUS_COLORS[status] }}
-                                    />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  {isDisabled ? (
+                                    <p>{disabledReason}</p>
+                                  ) : (
+                                    <p>Set status to {config.label}</p>
                                   )}
-                                </div>
-                              </Button>
+                                </TooltipContent>
+                              </Tooltip>
                             </motion.div>
                           );
                         })}
@@ -601,13 +946,13 @@ export default function PropertiesPanel() {
             <Button
               variant="destructive"
               className={`w-full h-12 transition-all duration-300 font-medium shadow-lg 
-               bg-gradient-to-r from-red-500 via-red-600 to-red-700 text-white 
-               ${isLocked ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:scale-[1.02] active:scale-[0.98] hover:from-red-600 hover:via-red-700 hover:to-red-800'}`}
+              bg-gradient-to-r from-red-500 via-red-600 to-red-700 text-white 
+              ${isLocked ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:scale-[1.02] active:scale-[0.98] hover:from-red-600 hover:via-red-700 hover:to-red-800'}`}
               onClick={handleDelete}
               disabled={isLocked}
             >
               <Trash2 className="w-5 h-5 mr-3" />
-              {isLocked ? 'Delete Locked' : `Delete ${isTable ? "Table" : "Item"}`}
+              {isLocked ? 'Delete Locked' : `Delete ${isArea ? 'Area' : isTable ? 'Table' : 'Item'}`}
             </Button>
           </motion.div>
         </motion.div>

@@ -19,9 +19,9 @@ interface TouchDragConfig {
 }
 
 function RestaurantLayoutContent() {
-  const { state } = useRestaurant();
+  const { state, dispatch } = useRestaurant();
   const [canvasSize, setCanvasSize] = useState({ width: 800, height: 600 });
-  
+
 
   // Update canvas size on window resize with correct dimensions
   useEffect(() => {
@@ -72,6 +72,14 @@ function RestaurantLayoutContent() {
         {/* Header with improved floor dimension display */}
         <RestaurantHeader
           layout={state.layout}
+          onSelectItem={(itemId: string) => {
+            dispatch({
+              type: "SELECT_ITEM",
+              payload: {
+                itemId
+              },
+            });
+          }}
           userData={{
             name: "John Doe",
             email: "john@restaurant.com",
@@ -98,9 +106,9 @@ function RestaurantLayoutContent() {
         />
 
         {/* Canvas and Properties Panel Container */}
-        <div className="flex-1 flex min-h-0">
+        <div className="flex-1 flex lg:flex-row min-h-0">
           {/* Canvas Area - Flexible width */}
-          <div className="flex-1 min-w-0 bg-muted/30">
+          <div className="min-w-0 bg-muted/30 order-1 lg:order-none">
             <DynamicCanvasWrapper
               width={canvasSize.width}
               height={canvasSize.height}
@@ -108,8 +116,8 @@ function RestaurantLayoutContent() {
             />
           </div>
 
-          {/* Properties Panel - Fixed width */}
-          <div className="w-80 flex-shrink-0">
+          {/* Properties Panel - Responsive width */}
+          <div className="relative lg:w-80 flex-shrink-0 order-2 lg:order-none max-h-80 lg:max-h-none overflow-y-auto lg:overflow-visible">
             <PropertiesPanel />
           </div>
         </div>

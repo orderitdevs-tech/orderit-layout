@@ -1,6 +1,6 @@
 // types/restaurant.ts
 
-import { LayoutItem } from "./restaurant";
+import { LayoutItem, RoomItem } from "./restaurant";
 
 export interface FloorDimensions {
     width: number;
@@ -27,6 +27,7 @@ export interface CanvasBounds {
     height: number;
 }
 
+// In your types/canvas.ts file
 export interface PerformanceContextType {
     viewport: Viewport;
     scale: number;
@@ -46,6 +47,7 @@ export interface LayoutItemComponentProps {
     isLocked: boolean;
     onSelect: () => void;
     onUpdate: (position: { x: number; y: number }) => void;
+    rooms?: RoomItem[];
 }
 
 export interface FloorControlsProps {
@@ -60,14 +62,14 @@ export interface FloorControlsProps {
 }
 
 export interface HeaderProps {
-  floorDimensions: { width: number; height: number };
-  viewScale: number;
-  itemsCount: number; 
-  visibleItemsCount: number; 
-  isLocked: boolean;
-  onToggleLock: () => void;
-  showSettings: boolean;
-  onToggleSettings: () => void;
+    floorDimensions: { width: number; height: number };
+    viewScale: number;
+    itemsCount: number;
+    visibleItemsCount: number;
+    isLocked: boolean;
+    onToggleLock: () => void;
+    showSettings: boolean;
+    onToggleSettings: () => void;
 }
 
 export interface LockButtonProps {

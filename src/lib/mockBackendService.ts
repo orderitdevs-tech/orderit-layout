@@ -20,8 +20,8 @@ export class MockBackendService {
                     height: 80,
                     tableNumber: 'T1',
                     capacity: 4,
-                    status: 'free',
-                    tableType: 'regular'
+                    status: 'available',
+                    
                 },
                 {
                     id: 'table-2',
@@ -34,7 +34,7 @@ export class MockBackendService {
                     tableNumber: 'T2',
                     capacity: 2,
                     status: 'occupied',
-                    tableType: 'regular'
+                   
                 }
             ]
         }],
@@ -57,7 +57,6 @@ export class MockBackendService {
                     tableNumber: 'T3',
                     capacity: 6,
                     status: 'reserved',
-                    tableType: 'vip'
                 }
             ]
         }],
@@ -79,8 +78,7 @@ export class MockBackendService {
                     height: 120,
                     tableNumber: 'T4',
                     capacity: 8,
-                    status: 'free',
-                    tableType: 'outdoor'
+                    status: 'available',
                 }
             ]
         }]

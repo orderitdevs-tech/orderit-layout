@@ -13,7 +13,7 @@ const DynamicCanvas = dynamic(() => import("./Canvas"), {
   ssr: false,
   loading: () => (
     <div className="flex items-center justify-center w-screen h-screen bg-gradient-to-br from-slate-50 via-slate-100 to-slate-200">
-      <div className="relative w-full max-w-5xl h-[80vh] min-h-[400px] rounded-xl border border-slate-200/60 shadow-lg bg-white/80 overflow-hidden">
+      <div className="relative w-full h-full rounded-xl border border-slate-200/60 shadow-lg bg-white/80 overflow-hidden">
         {/* Floor Title Skeleton */}
         <div className="absolute -top-8 left-1/2 -translate-x-1/2">
           <Skeleton className="h-7 w-40 bg-gradient-to-r from-blue-200 to-cyan-200" />

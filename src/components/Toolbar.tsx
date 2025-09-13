@@ -2,8 +2,8 @@
 
 import React, { useState } from "react";
 import {
-  Move,
-  MousePointer,
+  // Move,
+  // MousePointer,
   Plus,
   Save,
   Layers,
@@ -22,6 +22,10 @@ import { Card } from "@/components/ui/card";
 import RenameModal from "./RenameModal";
 import { FileInput } from "./FileInput";
 import AddFloorModal from "./AddFloorModal";
+import { Righteous } from "next/font/google";
+import Link from "next/link";
+import Image from "next/image";
+const righteous = Righteous({ subsets: ['latin'], weight: '400' });
 
 interface PlaceItemProps {
   floor: { id: string; name: string };
@@ -125,7 +129,6 @@ interface ToolbarProps {
 export default function Toolbar({ onTouchDrop }: ToolbarProps) {
   const {
     state,
-    dispatch,
     switchFloor,
     renameFloor,
     deleteFloor,
@@ -154,10 +157,10 @@ export default function Toolbar({ onTouchDrop }: ToolbarProps) {
     e.dataTransfer.effectAllowed = "copy";
   };
 
-  const tools = [
-    { id: "select", icon: MousePointer, label: "Select" },
-    { id: "pan", icon: Move, label: "Pan" },
-  ] as const;
+  // const tools = [
+  //   { id: "select", icon: MousePointer, label: "Select" },
+  //   { id: "pan", icon: Move, label: "Pan" },
+  // ] as const;
 
   // Function to handle adding a new floor
   const handleAddFloor = async (name: string) => {
@@ -213,8 +216,47 @@ export default function Toolbar({ onTouchDrop }: ToolbarProps) {
     <>
       <div className="bg-white border-r border-gray-200 w-64 h-full flex flex-col shadow-lg min-h-screen">
         {/* Tools Section */}
-        <div className="p-4 border-b border-gray-200">
-          <h3 className="text-sm font-semibold text-orange-600 mb-3">Tools</h3>
+        <div className="p-4 flex justify-start items-center">
+          {/* Company Logo */}
+          <motion.div
+            whileHover={{ scale: 1.05, rotate: 2 }}
+            whileTap={{ scale: 0.95 }}
+            className="flex items-center gap-2"
+          >
+            <motion.div
+              className="relative w-10 h-10 lg:w-12 lg:h-12 rounded-xl bg-gradient-to-br from-orange-400 via-orange-500 to-orange-600 dark:from-orange-500 dark:via-orange-600 dark:to-orange-700 flex items-center justify-center shadow-lg shadow-orange-500/25 dark:shadow-orange-600/25 cursor-pointer"
+              whileHover={{
+                scale: 1.05,
+                rotate: 5,
+                boxShadow: "0 20px 40px rgba(251, 146, 60, 0.4)"
+              }}
+              transition={{ type: "spring", stiffness: 400, damping: 17 }}
+            >
+              <Image
+                src="/logo.png"
+                alt="OrderIt Logo"
+                width={32}
+                height={32}
+                priority
+                className="w-6 h-6 lg:w-8 lg:h-8 object-contain"
+              />
+              <motion.div
+                className="absolute inset-0 rounded-xl bg-gradient-to-br from-orange-400/20 to-orange-600/20"
+                animate={{ opacity: [0, 1, 0] }}
+                transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+              />
+            </motion.div>
+
+            <Link href='/' className='flex items-center group'>
+              <motion.h1
+                className={`text-xl lg:text-2xl font-bold text-gray-900 dark:text-white transition-all duration-300 ${righteous?.className || ''}`}
+                whileHover={{ scale: 1.02 }}
+              >
+                <span className="text-orange-500 dark:text-orange-400">O</span>rder<span className="text-orange-500 dark:text-orange-400">I</span>t
+              </motion.h1>
+            </Link>
+          </motion.div>
+          {/* <h3 className="text-sm font-semibold text-orange-600 mb-3">Tools</h3>
           <div className="flex items-center gap-2">
             {tools.map((tool) => {
               const Icon = tool.icon;
@@ -242,7 +284,7 @@ export default function Toolbar({ onTouchDrop }: ToolbarProps) {
                 </Button>
               );
             })}
-          </div>
+          </div> */}
         </div>
 
         {/* Items Section */}

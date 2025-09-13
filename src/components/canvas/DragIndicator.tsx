@@ -2,6 +2,7 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CanvasBounds, ViewState } from '@/types/canvas';
+import { MousePointerClick } from 'lucide-react';
 
 interface DragIndicatorProps {
     isDragOver: boolean;
@@ -28,7 +29,7 @@ const DragIndicator: React.FC<DragIndicatorProps> = ({
                 >
                     {/* Main drop zone highlight */}
                     <motion.div
-                        className="absolute border-2 border-dashed border-orange-400/80 bg-orange-50/40 rounded-3xl backdrop-blur-sm"
+                        className="absolute border-2 border-dashed border-orange-400/80 bg-orange-50/40 rounded-md"
                         style={{
                             left: `${restaurantFloorBounds.x * viewState.scale + viewState.x}px`,
                             top: `${restaurantFloorBounds.y * viewState.scale + viewState.y + 64}px`,
@@ -76,22 +77,21 @@ const DragIndicator: React.FC<DragIndicatorProps> = ({
                         transition={{ duration: 0.4, ease: "easeOut" }}
                     >
                         <motion.div
-                            className="bg-gradient-to-r from-orange-500 via-amber-400 to-orange-600 text-white px-8 py-3 rounded-2xl font-bold text-base shadow-2xl tracking-wide"
+                            className="flex items-center gap-2 bg-gradient-to-r from-orange-500 via-amber-500 to-orange-600 text-white px-8 py-3 rounded-2xl font-semibold text-base shadow-2xl tracking-wide"
                             animate={{
                                 y: [0, -8, 0],
                                 boxShadow: [
-                                    '0 20px 40px rgba(251,146,60,0.3)',
-                                    '0 25px 50px rgba(251,146,60,0.4)',
-                                    '0 20px 40px rgba(251,146,60,0.3)'
+                                    "0 20px 40px rgba(251,146,60,0.3)", // orange
+                                    "0 25px 50px rgba(249,115,22,0.4)", // deep orange
+                                    "0 20px 40px rgba(251,146,60,0.3)"
                                 ]
                             }}
                             transition={{ duration: 2, repeat: Infinity }}
                         >
-                            ✨ Drop table on restaurant floor
+                            <MousePointerClick className="w-5 h-5 text-white" />
+                            Drop to place
                         </motion.div>
                     </motion.div>
-
-                    
                 </motion.div>
             )}
 

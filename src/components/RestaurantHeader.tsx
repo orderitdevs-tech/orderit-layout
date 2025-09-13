@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useCallback, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import {
   Bell,
@@ -14,7 +14,8 @@ import {
   Ruler,
   Table2,
   MapPin,
-  Sparkles
+  Sparkles,
+  X
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -33,10 +34,24 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Righteous } from "next/font/google";
-import { RestaurantLayout } from "../types/restaurant";
+import { RestaurantLayout, LayoutItem } from "../types/restaurant";
 
-const righteous = Righteous({ subsets: ['latin'], weight: '400' });
+// Custom hook for debounced search
+const useDebounce = <T,>(value: T, delay: number): T => {
+  const [debouncedValue, setDebouncedValue] = useState<T>(value);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [value, delay]);
+
+  return debouncedValue;
+};
 
 interface Notification {
   id: string;
@@ -58,6 +73,7 @@ interface RestaurantHeaderProps {
   layout: RestaurantLayout;
   userData?: UserData;
   notifications?: Notification[];
+  onSelectItem: (itemId: string) => void;
 }
 
 const RestaurantHeader: React.FC<RestaurantHeaderProps> = ({
@@ -67,18 +83,49 @@ const RestaurantHeader: React.FC<RestaurantHeaderProps> = ({
     email: "user@example.com",
     role: "Manager",
   },
-  notifications = []
+  notifications = [],
+  onSelectItem
 }) => {
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<LayoutItem[]>([]);
+  const [selectedResultIndex, setSelectedResultIndex] = useState(-1);
   const [unreadCount, setUnreadCount] = useState(
     notifications.filter(n => !n.read).length
   );
+
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const searchResultsRef = useRef<HTMLDivElement>(null);
+
+  // Debounce search query
+  const debouncedSearchQuery = useDebounce(searchQuery, 300);
 
   // Get table count from the current floor's layoutItems
   const tableCount = layout.floor.layoutItems.filter(item =>
     item.type.startsWith("table-")
   ).length;
+
+  // Handle item selection
+
+
+  // Handle search close
+  const handleCloseSearch = useCallback(() => {
+    setIsSearchOpen(false);
+    setSearchQuery("");
+    setSearchResults([]);
+    setSelectedResultIndex(-1);
+  }, []);
+  const handleSelectItem = useCallback((item: LayoutItem) => {
+    if (onSelectItem) {
+      onSelectItem(item.id);
+    }
+    handleCloseSearch();
+  }, [onSelectItem, handleCloseSearch]);
+  // Handle search input change
+  const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value);
+  }, []);
 
   const markAsRead = (id: string) => {
     console.log(id);
@@ -90,6 +137,129 @@ const RestaurantHeader: React.FC<RestaurantHeaderProps> = ({
     setUnreadCount(0);
   };
 
+  // Search functionality
+  const performSearch = useCallback((query: string): LayoutItem[] => {
+    if (!query.trim()) return [];
+
+    const searchTerm = query.toLowerCase();
+
+    return layout.floor.layoutItems.filter(item => {
+      // Search by ID
+      if (item.id.toLowerCase().includes(searchTerm)) return true;
+
+      // Search by item type
+      if (item.type.toLowerCase().includes(searchTerm)) return true;
+
+      // Search by status (for tables and rooms)
+      if ('status' in item && item.status.toLowerCase().includes(searchTerm)) return true;
+
+      // Search by table-specific properties
+      if (item.type.startsWith('table-')) {
+        const tableItem = item as Extract<LayoutItem, { type: `table-${string}` }>;
+        // Search by table number
+        if (tableItem.tableNumber.toLowerCase().includes(searchTerm)) return true;
+        // Search by capacity
+        if (tableItem.capacity.toString().includes(searchTerm)) return true;
+      }
+
+      // Search by room-specific properties
+      if (item.type === 'room') {
+        const roomItem = item as Extract<LayoutItem, { type: 'room' }>;
+        // Search by room name
+        if (roomItem.name.toLowerCase().includes(searchTerm)) return true;
+        // Search by room type
+        if (roomItem.roomType.toLowerCase().includes(searchTerm)) return true;
+        // Search by description
+        if (roomItem.description.toLowerCase().includes(searchTerm)) return true;
+      }
+
+      // Search by utility-specific properties
+      if (!item.type.startsWith('table-') && item.type !== 'room') {
+        const utilityItem = item as Extract<LayoutItem, { type: 'washroom' | 'counter' | 'entry-gate' | 'exit-gate' | 'elevator' | 'stair' }>;
+        // Search by name
+        if (utilityItem.name?.toLowerCase().includes(searchTerm)) return true;
+        // Search by description
+        if (utilityItem.description?.toLowerCase().includes(searchTerm)) return true;
+      }
+
+      return false;
+    }).slice(0, 10); // Limit results to 10 items
+  }, [layout.floor.layoutItems]);
+
+  // Update search results when debounced query changes
+  useEffect(() => {
+    const results = performSearch(debouncedSearchQuery);
+    setSearchResults(results);
+    setSelectedResultIndex(-1);
+  }, [debouncedSearchQuery, performSearch]);
+
+  // Helper function to get item display info
+  const getItemDisplayInfo = useCallback((item: LayoutItem) => {
+    if (item.type.startsWith('table-')) {
+      const tableItem = item as Extract<LayoutItem, { type: `table-${string}` }>;
+      return {
+        title: `Table ${tableItem.tableNumber}`,
+        subtitle: `${tableItem.capacity} seats • ${tableItem.status}`,
+        icon: Table2,
+        color: tableItem.status === 'available' ? 'text-green-600' :
+          tableItem.status === 'occupied' ? 'text-red-600' :
+            tableItem.status === 'reserved' ? 'text-blue-600' : 'text-gray-600'
+      };
+    }
+
+    if (item.type === 'room') {
+      const roomItem = item as Extract<LayoutItem, { type: 'room' }>;
+      return {
+        title: roomItem.name,
+        subtitle: `${roomItem.roomType.replace('_', ' ')} • ${roomItem.status}`,
+        icon: MapPin,
+        color: roomItem.status === 'available' ? 'text-green-600' :
+          roomItem.status === 'occupied' ? 'text-red-600' :
+            roomItem.status === 'reserved' ? 'text-blue-600' : 'text-gray-600'
+      };
+    }
+
+    // Utility items
+    const utilityItem = item as Extract<LayoutItem, { type: 'washroom' | 'counter' | 'entry-gate' | 'exit-gate' | 'elevator' | 'stair' }>;
+    return {
+      title: utilityItem.name || item.type.replace('-', ' '),
+      subtitle: utilityItem.description || `${item.type} utility`,
+      icon: Settings,
+      color: 'text-amber-600'
+    };
+  }, []);
+
+  // Handle keyboard navigation
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (!searchResults.length) return;
+
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault();
+        setSelectedResultIndex(prev =>
+          prev < searchResults.length - 1 ? prev + 1 : 0
+        );
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        setSelectedResultIndex(prev =>
+          prev > 0 ? prev - 1 : searchResults.length - 1
+        );
+        break;
+      case 'Enter':
+        e.preventDefault();
+        if (selectedResultIndex >= 0 && searchResults[selectedResultIndex]) {
+          handleSelectItem(searchResults[selectedResultIndex]);
+        }
+        break;
+      case 'Escape':
+        e.preventDefault();
+        handleCloseSearch();
+        break;
+    }
+  }, [searchResults, selectedResultIndex, handleCloseSearch, handleSelectItem]);
+
+
   return (
     <motion.header
       initial={{ y: -20, opacity: 0 }}
@@ -100,24 +270,6 @@ const RestaurantHeader: React.FC<RestaurantHeaderProps> = ({
       <div className="flex items-center justify-between">
         {/* Left section - Logo and layout info */}
         <div className="flex items-center gap-4">
-          {/* Company Logo */}
-          <motion.div
-            whileHover={{ scale: 1.05, rotate: 2 }}
-            whileTap={{ scale: 0.95 }}
-            className="flex items-center gap-2"
-          >
-            <motion.h1
-              className={`text-4xl font-bold 
-                  text-gray-900 dark:text-slate-100 
-                  transition-all duration-300 
-                  ${righteous?.className || ''}`}
-              whileHover={{ scale: 1.02 }}
-            >
-              <span className="text-orange-500 dark:text-orange-400">O</span>rder
-              <span className="text-orange-500 dark:text-orange-400">I</span>t
-            </motion.h1>
-          </motion.div>
-
           <div className="h-7 w-px bg-gradient-to-b from-orange-200/50 to-transparent" />
 
           <div className="min-w-0">
@@ -146,34 +298,111 @@ const RestaurantHeader: React.FC<RestaurantHeaderProps> = ({
 
         {/* Center section - Search */}
         <div className="flex-1 max-w-md mx-8">
-          <motion.div
-            animate={{ width: isSearchOpen ? "100%" : "44px" }}
-            className="relative flex items-center"
-          >
-            {isSearchOpen ? (
+          <div className="relative">
+            <motion.div
+              animate={{ width: isSearchOpen ? "100%" : "44px" }}
+              className="relative flex items-center"
+            >
+              {isSearchOpen ? (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="w-full relative"
+                >
+                  <Input
+                    ref={searchInputRef}
+                    placeholder="Search tables, rooms, utilities..."
+                    className="pr-10 transition-all bg-white border-amber-300/70 focus:border-amber-400 focus:ring-amber-300/70"
+                    value={searchQuery}
+                    onChange={handleSearchChange}
+                    onKeyDown={handleKeyDown}
+                    autoFocus
+                  />
+                  <button
+                    onClick={handleCloseSearch}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 h-6 w-6 flex items-center justify-center transition-colors"
+                  >
+                    <X className="h-3.5 w-3.5 text-gray-500" />
+                  </button>
+                </motion.div>
+              ) : (
+                <motion.button
+                  whileHover={{ scale: 1.1, backgroundColor: "rgba(251, 191, 36, 0.2)" }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setIsSearchOpen(true)}
+                  className="h-10 w-11 rounded-xl bg-amber-100/50 border border-amber-200/50 flex items-center justify-center text-amber-700 hover:text-amber-800"
+                >
+                  <Search className="h-4.5 w-4.5" />
+                </motion.button>
+              )}
+            </motion.div>
+
+            {/* Search Results Dropdown */}
+            {isSearchOpen && searchQuery && (
               <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="w-full"
+                ref={searchResultsRef}
+                initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                className="absolute top-12 left-0 right-0 bg-white border border-amber-200/70 rounded-xl shadow-lg shadow-amber-200/20 z-50 max-h-80 overflow-y-auto"
               >
-                <Input
-                  placeholder="Search layouts, tables, items..."
-                  className="pr-10 transition-all bg-white border-amber-300/70 focus:border-amber-400 focus:ring-amber-300/30"
-                  autoFocus
-                  onBlur={() => setIsSearchOpen(false)}
-                />
+                {searchResults.length > 0 ? (
+                  <div className="p-2">
+                    {searchResults.map((item, index) => {
+                      const displayInfo = getItemDisplayInfo(item);
+                      const Icon = displayInfo.icon;
+                      const isSelected = index === selectedResultIndex;
+
+                      return (
+                        <motion.div
+                          key={item.id}
+                          className={`p-3 rounded-lg cursor-pointer transition-all ${isSelected
+                            ? 'bg-amber-50 border border-amber-200'
+                            : 'hover:bg-amber-25 hover:border hover:border-amber-100'
+                            }`}
+                          onClick={() => handleSelectItem(item)}
+                          whileHover={{ y: -1, backgroundColor: "rgba(254, 243, 199, 0.3)" }}
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className={`p-2 rounded-lg bg-amber-100/50 ${displayInfo.color}`}>
+                              <Icon className="h-4 w-4" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <p className="text-sm font-medium text-amber-900 truncate">
+                                  {displayInfo.title}
+                                </p>
+                                <span className="text-xs text-amber-600/60 font-mono">
+                                  #{item.id.slice(-4)}
+                                </span>
+                              </div>
+                              <p className="text-xs text-amber-700/80 truncate">
+                                {displayInfo.subtitle}
+                              </p>
+                            </div>
+                            <div className="text-xs text-amber-600/60">
+                              {item.x}, {item.y}
+                            </div>
+                          </div>
+                        </motion.div>
+                      );
+                    })}
+                  </div>
+                ) : debouncedSearchQuery ? (
+                  <div className="p-6 text-center text-amber-600/70">
+                    <Search className="h-8 w-8 mx-auto mb-2 opacity-50 text-amber-400" />
+                    <p>{`No results found for "${debouncedSearchQuery}"`}</p>
+                    <p className="text-xs mt-1">Try searching by table number, room name, or item type</p>
+                  </div>
+                ) : (
+                  <div className="p-4 text-center text-amber-600/70">
+                    <p className="text-sm">Start typing to search...</p>
+                    <p className="text-xs mt-1">Search tables, rooms, utilities by name, type, status, or capacity</p>
+                  </div>
+                )}
               </motion.div>
-            ) : (
-              <motion.button
-                whileHover={{ scale: 1.1, backgroundColor: "rgba(251, 191, 36, 0.2)" }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => setIsSearchOpen(true)}
-                className="h-10 w-11 rounded-xl bg-amber-100/50 border border-amber-200/50 flex items-center justify-center text-amber-700 hover:text-amber-800"
-              >
-                <Search className="h-4.5 w-4.5" />
-              </motion.button>
             )}
-          </motion.div>
+          </div>
         </div>
 
         {/* Right section - Actions and user menu */}
