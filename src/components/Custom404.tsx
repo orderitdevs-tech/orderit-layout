@@ -3,7 +3,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { ArrowLeft, Sparkles, Navigation, Compass } from 'lucide-react';
+import { ArrowLeft, Sparkles, Navigation } from 'lucide-react';
 import Image from 'next/image';
 
 const Custom404 = () => {
