@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { ArrowLeft, Sparkles, Navigation, Compass } from 'lucide-react';
+import Image from 'next/image';
 
 const Custom404 = () => {
     const containerVariants = {
@@ -23,7 +24,7 @@ const Custom404 = () => {
             y: 0,
             opacity: 1,
             scale: 1,
-            transition: { 
+            transition: {
                 duration: 0.7,
             }
         }
@@ -38,9 +39,9 @@ const Custom404 = () => {
     };
 
     const glowVariants = {
-        initial: { 
+        initial: {
             boxShadow: "0 0 20px rgba(59, 130, 246, 0.3)",
-            backgroundPosition: "0% 50%" 
+            backgroundPosition: "0% 50%"
         },
         animate: {
             boxShadow: [
@@ -93,7 +94,7 @@ const Custom404 = () => {
                     ease: "easeInOut"
                 }}
             />
-            
+
             <motion.div
                 className="absolute bottom-1/3 right-1/3 w-24 h-24 bg-purple-400/10 dark:bg-purple-600/10 rounded-full blur-xl"
                 animate={{
@@ -180,37 +181,52 @@ const Custom404 = () => {
                         </motion.div>
 
                         {/* Animated Illustration */}
+
                         <motion.div
                             className="mb-8"
                             variants={itemVariants}
                         >
                             <motion.div
-                                className="w-40 h-40 mx-auto mb-6 bg-gradient-to-br from-blue-400 to-purple-500 dark:from-blue-600 dark:to-purple-600 rounded-3xl flex items-center justify-center shadow-2xl"
-                                whileHover={{ 
+                                className="w-40 h-40 mx-auto mb-6 bg-gradient-to-br from-orange-400 to-orange-600 dark:from-orange-500 dark:to-orange-700 rounded-3xl flex items-center justify-center shadow-[0_0_40px_rgba(249,115,22,0.6)]"
+                                whileHover={{
                                     scale: 1.05,
-                                    rotate: 5 
+                                    rotate: 5,
+                                    boxShadow: "0 0 60px rgba(249,115,22,0.9)" // brighter on hover
                                 }}
-                                animate={{ 
+                                animate={{
                                     rotate: [0, 5, -5, 0],
-                                    y: [0, -10, 0] 
+                                    y: [0, -10, 0],
+                                    boxShadow: [
+                                        "0 0 30px rgba(249,115,22,0.5)",
+                                        "0 0 50px rgba(249,115,22,0.8)",
+                                        "0 0 30px rgba(249,115,22,0.5)"
+                                    ]
                                 }}
-                                transition={{ 
+                                transition={{
                                     duration: 8,
                                     repeat: Infinity,
                                     ease: "easeInOut"
                                 }}
                             >
-                                <Compass className="w-20 h-20 text-white" />
+                                <Image
+                                    src="/logo.png"
+                                    alt="Logo"
+                                    width={80}
+                                    height={80}
+                                    className="object-contain drop-shadow-[0_0_10px_rgba(249,115,22,0.8)]"
+                                    priority
+                                />
                             </motion.div>
                         </motion.div>
+
 
                         {/* Action Buttons */}
                         <motion.div
                             className="flex flex-col sm:flex-row gap-4 justify-center items-center"
                             variants={itemVariants}
                         >
-                            <motion.div 
-                                whileHover={{ scale: 1.05 }} 
+                            <motion.div
+                                whileHover={{ scale: 1.05 }}
                                 whileTap={{ scale: 0.95 }}
                                 className="w-full sm:w-auto"
                             >
@@ -238,7 +254,7 @@ const Custom404 = () => {
                             variants={pulseVariants}
                             animate="animate"
                         />
-                        
+
                         <motion.div
                             className="absolute -bottom-8 -right-8 w-28 h-28 bg-purple-200/30 dark:bg-purple-600/20 rounded-full"
                             variants={pulseVariants}
