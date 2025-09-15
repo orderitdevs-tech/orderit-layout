@@ -14,11 +14,11 @@ import { useRestaurant } from '@/context/RestaurantContext';
 
 // Type guard functions
 const isTableItem = (item: any): item is TableItem => {
-    return item.type.startsWith("table-");
+    return item.type.startsWith("table_");
 };
 
 const isUtilityItem = (item: any): item is UtilityItem => {
-    return ['washroom', 'counter', 'entry-gate', 'exit-gate', 'elevator', 'stair'].includes(item.type);
+    return ['washroom', 'counter', 'entry_gate', 'exit_gate', 'elevator', 'stair'].includes(item.type);
 };
 
 const isRoomItem = (item: any): item is RoomItem => {

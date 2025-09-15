@@ -15,7 +15,7 @@ export type SeatingStatus =
   | "occupied"       // currently in use
   | "reserved"       // booked in advance
   | "maintenance"    // being cleaned or repaired
-  | "out-of-service"; // temporarily or permanently unavailable
+  | "out_of_service"; // temporarily or permanently unavailable
 
 
 // ====================
@@ -49,7 +49,7 @@ export interface RoomItem extends BaseItem {
 // ====================
 
 export interface TableItem extends BaseItem {
-  type: "table-2" | "table-4" | "table-6" | "table-8" | "table-10" | "table-12";
+  type: "table_2" | "table_4" | "table_6" | "table_8" | "table_10" | "table_12";
   tableNumber: string;
   status: SeatingStatus;
   capacity: number;
@@ -60,7 +60,7 @@ export interface TableItem extends BaseItem {
 // Utility item
 // ====================
 export interface UtilityItem extends BaseItem {
-  type: "washroom" | "counter" | "entry-gate" | "exit-gate" | "elevator" | "stair";
+  type: "washroom" | "counter" | "entry_gate" | "exit_gate" | "elevator" | "stair";
   name?: string;
   description?: string;
   roomId?: string; // Utility can also be inside a room
@@ -94,16 +94,16 @@ export interface RestaurantLayout {
 
 export interface DragItem {
   type:
-  | "table-2"
-  | "table-4"
-  | "table-6"
-  | "table-8"
-  | "table-10"
-  | "table-12"
+  | "table_2"
+  | "table_4"
+  | "table_6"
+  | "table_8"
+  | "table_10"
+  | "table_12"
   | "washroom"
   | "counter"
-  | "entry-gate"
-  | "exit-gate"
+  | "entry_gate"
+  | "exit_gate"
   | "room"
   | "elevator"
   | "stair";

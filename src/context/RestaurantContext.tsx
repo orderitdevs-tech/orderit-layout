@@ -16,9 +16,10 @@ import {
   ExportRestaurantLayout,
   RoomItem,
 } from "../types/restaurant";
-import { MockBackendService } from "../lib/mockBackendService";
+// import { MockBackendService } from "../lib/mockBackendService";
 import { LayoutImporter } from "@/utils/layoutImport";
 import { LayoutAction } from "@/types/layout";
+import { useFloors } from "@/hooks/useFloor";
 
 // ==================== STATE INTERFACES ====================
 interface RestaurantState {
@@ -102,6 +103,17 @@ function restaurantReducer(state: RestaurantState, action: LayoutAction): Restau
   const lockError = "Cannot perform action: Floor is locked";
 
   switch (action.type) {
+
+    case "INIT": {
+      return {
+        ...state,
+        layout: {
+          ...state.layout,
+          id: action.payload.id,
+          name: action.payload.name
+        }
+      }
+    }
     // ==================== ITEM CRUD ====================
     case "ADD_ITEM": {
       if (isLocked) return { ...state, error: lockError };
@@ -438,6 +450,10 @@ function restaurantReducer(state: RestaurantState, action: LayoutAction): Restau
     case "SET_ORIGINAL_FLOOR_DATA": {
       return {
         ...state,
+        layout: {
+          ...state.layout,
+          floor: action.payload.floorData
+        },
         originalFloorData: action.payload.floorData,
         hasUnsavedChanges: false,
       };
@@ -511,7 +527,8 @@ interface RestaurantContextValue {
 const RestaurantContext = createContext<RestaurantContextValue | null>(null);
 
 // ==================== PROVIDER ====================
-export function RestaurantProvider({ children }: { children: React.ReactNode }) {
+export function RestaurantProvider({ children, restaurantId }: { children: React.ReactNode, restaurantId: string }) {
+  const { fetchFloors, fetchFloorLayout, createFloor, deleteFloor: DeleteFloor, saveFloorLayout } = useFloors(restaurantId);
   const [state, dispatch] = useReducer(restaurantReducer, initialState);
   const lastOperationRef = useRef<(() => Promise<void>) | null>(null);
 
@@ -573,7 +590,7 @@ export function RestaurantProvider({ children }: { children: React.ReactNode }) 
       dispatch({ type: "SET_LOADING_FLOOR", payload: { isLoading: true, floorId } });
       dispatch({ type: "SET_ERROR", payload: { error: null } });
 
-      const floorData = await MockBackendService.getFloorData(floorId);
+      const floorData = await fetchFloorLayout(floorId);
       dispatch({ type: "LOAD_FLOOR_DATA", payload: { floorData, floorId } });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to load floor data';
@@ -591,10 +608,14 @@ export function RestaurantProvider({ children }: { children: React.ReactNode }) 
       dispatch({ type: "SET_SAVING", payload: { isSaving: true } });
       dispatch({ type: "SET_ERROR", payload: { error: null } });
 
-      await MockBackendService.saveFloorData(state.currentFloorId, state.layout.floor);
+      const result = await saveFloorLayout(state.currentFloorId, state.layout.floor);
 
       dispatch({ type: "SET_SAVING", payload: { isSaving: false } });
-      dispatch({ type: "SET_ORIGINAL_FLOOR_DATA", payload: { floorData: state.layout.floor } });
+      if (result.updatedLayout) {
+        console.log(result.updatedLayout)
+        dispatch({ type: "SET_ORIGINAL_FLOOR_DATA", payload: { floorData: result.updatedLayout! } });
+      }
+      dispatch({ type: "TOGGLE_FLOOR_LOCK", payload: { isLocked: true } });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to save floor data';
       dispatch({ type: "SET_ERROR", payload: { error: `Save Error: ${errorMessage}` } });
@@ -604,8 +625,9 @@ export function RestaurantProvider({ children }: { children: React.ReactNode }) 
   const addFloor = useCallback(createAsyncOperation(async (name: string) => {
     try {
       dispatch({ type: "SET_ERROR", payload: { error: null } });
-      const newFloor = await MockBackendService.createFloor(name);
+      const newFloor = await createFloor({ name, width: 1600, height: 1200 });
       dispatch({ type: "ADD_FLOOR", payload: { floorId: newFloor.id, name: newFloor.name } });
+      dispatch({ type: "SWITCH_FLOOR", payload: { floorId: newFloor.id } });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to create floor';
       dispatch({ type: "SET_ERROR", payload: { error: `Create Error: ${errorMessage}` } });
@@ -615,7 +637,7 @@ export function RestaurantProvider({ children }: { children: React.ReactNode }) 
   const deleteFloor = useCallback(createAsyncOperation(async (floorId: string) => {
     try {
       dispatch({ type: "SET_ERROR", payload: { error: null } });
-      await MockBackendService.deleteFloor(floorId);
+      await DeleteFloor(floorId);
       dispatch({ type: "DELETE_FLOOR", payload: { floorId } });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to delete floor';
@@ -626,7 +648,6 @@ export function RestaurantProvider({ children }: { children: React.ReactNode }) 
   const renameFloor = useCallback(createAsyncOperation(async (floorId: string, name: string) => {
     try {
       dispatch({ type: "SET_ERROR", payload: { error: null } });
-      await MockBackendService.renameFloor(floorId, name);
       dispatch({ type: "RENAME_FLOOR", payload: { floorId, name } });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to rename floor';
@@ -719,8 +740,10 @@ export function RestaurantProvider({ children }: { children: React.ReactNode }) 
     const fetchAvailableFloors = createAsyncOperation(async () => {
       try {
         dispatch({ type: "SET_ERROR", payload: { error: null } });
-        const floors = await MockBackendService.getAvailableFloors();
-        dispatch({ type: "SET_AVAILABLE_FLOORS", payload: { floors } });
+        const result = await fetchFloors();
+        dispatch({ type: "INIT", payload: { name: result.restaurant.name, id: result.restaurant.id } });
+        dispatch({ type: "SET_AVAILABLE_FLOORS", payload: { floors: result.floors } });
+        dispatch({ type: "SWITCH_FLOOR", payload: { floorId: result.floors[0].id } });
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Failed to fetch available floors';
         dispatch({ type: "SET_ERROR", payload: { error: `Initialization Error: ${errorMessage}` } });
@@ -728,7 +751,7 @@ export function RestaurantProvider({ children }: { children: React.ReactNode }) 
     });
 
     fetchAvailableFloors();
-  }, [createAsyncOperation]);
+  }, [createAsyncOperation, loadFloorData]);
 
   useEffect(() => {
     let isCurrent = true;
@@ -740,7 +763,7 @@ export function RestaurantProvider({ children }: { children: React.ReactNode }) 
         try {
           dispatch({ type: "SET_LOADING_FLOOR", payload: { isLoading: true, floorId: targetFloorId } });
 
-          const floorData = await MockBackendService.getFloorData(targetFloorId);
+          const floorData = await fetchFloorLayout(targetFloorId);
 
           if (isCurrent && state.currentFloorId === targetFloorId) {
             dispatch({ type: "LOAD_FLOOR_DATA", payload: { floorData, floorId: targetFloorId } });

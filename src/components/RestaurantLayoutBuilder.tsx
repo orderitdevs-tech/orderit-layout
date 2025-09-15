@@ -10,6 +10,7 @@ import DynamicCanvasWrapper from "./DynamicCanvas";
 import PropertiesPanel from "./PropertiesPanel";
 import HelpTooltip from "./HelpTooltip";
 import RestaurantHeader from "./RestaurantHeader";
+import { useSession } from "@/context/SessionContext";
 
 // Touch drag interface
 interface TouchDragConfig {
@@ -21,7 +22,7 @@ interface TouchDragConfig {
 function RestaurantLayoutContent() {
   const { state, dispatch } = useRestaurant();
   const [canvasSize, setCanvasSize] = useState({ width: 800, height: 600 });
-
+  const { user, signOut } = useSession();
 
   // Update canvas size on window resize with correct dimensions
   useEffect(() => {
@@ -72,6 +73,7 @@ function RestaurantLayoutContent() {
         {/* Header with improved floor dimension display */}
         <RestaurantHeader
           layout={state.layout}
+          signOut={signOut}
           onSelectItem={(itemId: string) => {
             dispatch({
               type: "SELECT_ITEM",
@@ -81,9 +83,9 @@ function RestaurantLayoutContent() {
             });
           }}
           userData={{
-            name: "John Doe",
-            email: "john@restaurant.com",
-            role: "Manager",
+            name:  user?.name!,
+            email: user?.email!,
+            role: user?.role!,
           }}
           notifications={[
             {
@@ -128,9 +130,9 @@ function RestaurantLayoutContent() {
   );
 }
 
-export default function RestaurantLayoutBuilder() {
+export default function RestaurantLayoutBuilder({ restaurantId }: { restaurantId: string }) {
   return (
-    <RestaurantProvider>
+    <RestaurantProvider restaurantId={restaurantId}>
       <RestaurantLayoutContent />
     </RestaurantProvider>
   );

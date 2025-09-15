@@ -7,38 +7,38 @@ export const LAYOUT_ITEM_CONFIGS: Record<string, DragItem> = {
     height: 200,
     image: "/tables/room.png"
   },
-  "table-2": {
-    type: "table-2",
+  "table_2": {
+    type: "table_2",
     width: 80,
     height: 60,
     image: "/tables/table-2.png",
   },
-  "table-4": {
-    type: "table-4",
+  "table_4": {
+    type: "table_4",
     width: 100,
     height: 80,
     image: "/tables/table-4.png",
   },
-  "table-6": {
-    type: "table-6",
+  "table_6": {
+    type: "table_6",
     width: 120,
     height: 100,
     image: "/tables/table-6.png",
   },
-  "table-8": {
-    type: "table-8",
+  "table_8": {
+    type: "table_8",
     width: 140,
     height: 120,
     image: "/tables/table-8.png",
   },
-  "table-10": {
-    type: "table-10",
+  "table_10": {
+    type: "table_10",
     width: 160,
     height: 130,
     image: "/tables/table-10.png",
   },
-  "table-12": {
-    type: "table-12",
+  "table_12": {
+    type: "table_12",
     width: 180,
     height: 140,
     image: "/tables/table-12.png",
@@ -49,14 +49,14 @@ export const LAYOUT_ITEM_CONFIGS: Record<string, DragItem> = {
     height: 60,
     image: "/tables/counter.svg",
   },
-  "entry-gate": {
-    type: "entry-gate",
+  "entry_gate": {
+    type: "entry_gate",
     width: 80,
     height: 100,
     image: "/tables/entrance_icon.svg",
   },
-  "exit-gate": {
-    type: "exit-gate",
+  "exit_gate": {
+    type: "exit_gate",
     width: 80,
     height: 100,
     image: "/tables/exit_icon.svg",
@@ -86,7 +86,7 @@ export const TABLE_STATUS_COLORS: Record<SeatingStatus, string> = {
   occupied: "#ef4444",    // red
   reserved: "#f59e0b",    // yellow
   maintenance: "#6b7280", // gray
-  "out-of-service": "#9333ea", // purple
+  "out_of_service": "#9333ea", // purple
 };
 
 export const generateTableId = (): string => {

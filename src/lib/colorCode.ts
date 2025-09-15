@@ -2,18 +2,18 @@
 export const getBackgroundColorForItemType = (item: string) => {
     const colorMap: { [key: string]: string } = {
         // Table types
-        'table-2': '#FFE08A', // Warm yellow - 2 seater
-        'table-4': '#7FD3E0', // Teal blue - 4 seater
-        'table-6': '#8FD694', // Fresh green - 6 seater
-        'table-8': '#E07C84', // Soft red - 8 seater
-        'table-10': '#9B59B6', // Royal purple - 10 seater
-        'table-12': '#B0B3B8', // Medium gray - 12 seater
+        'table_2': '#FFE08A', // Warm yellow - 2 seater
+        'table_4': '#7FD3E0', // Teal blue - 4 seater
+        'table_6': '#8FD694', // Fresh green - 6 seater
+        'table_8': '#E07C84', // Soft red - 8 seater
+        'table_10': '#9B59B6', // Royal purple - 10 seater
+        'table_12': '#B0B3B8', // Medium gray - 12 seater
 
         // Facility types
         'washroom': '#CBA6F7',   // Purple - washroom
         'counter': '#FFB580',    // Orange - counter
-        'entry-gate': '#9EDC9E', // Mint green - entry gate
-        'exit-gate': '#F5A9C0',  // Rose pink - exit gate
+        'entry_gate': '#9EDC9E', // Mint green - entry gate
+        'exit_gate': '#F5A9C0',  // Rose pink - exit gate
         'elevator': '#6FA8DC',   // Soft steel blue - elevator
         'stair': '#A3D977',      // Light green - stairs
 

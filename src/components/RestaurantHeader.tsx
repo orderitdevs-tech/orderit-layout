@@ -73,6 +73,7 @@ interface RestaurantHeaderProps {
   layout: RestaurantLayout;
   userData?: UserData;
   notifications?: Notification[];
+  signOut: ()=>void;
   onSelectItem: (itemId: string) => void;
 }
 
@@ -84,6 +85,7 @@ const RestaurantHeader: React.FC<RestaurantHeaderProps> = ({
     role: "Manager",
   },
   notifications = [],
+  signOut,
   onSelectItem
 }) => {
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
@@ -103,7 +105,7 @@ const RestaurantHeader: React.FC<RestaurantHeaderProps> = ({
 
   // Get table count from the current floor's layoutItems
   const tableCount = layout.floor.layoutItems.filter(item =>
-    item.type.startsWith("table-")
+    item.type.startsWith("table_")
   ).length;
 
   // Handle item selection
@@ -154,8 +156,8 @@ const RestaurantHeader: React.FC<RestaurantHeaderProps> = ({
       if ('status' in item && item.status.toLowerCase().includes(searchTerm)) return true;
 
       // Search by table-specific properties
-      if (item.type.startsWith('table-')) {
-        const tableItem = item as Extract<LayoutItem, { type: `table-${string}` }>;
+      if (item.type.startsWith('table_')) {
+        const tableItem = item as Extract<LayoutItem, { type: `table_${string}` }>;
         // Search by table number
         if (tableItem.tableNumber.toLowerCase().includes(searchTerm)) return true;
         // Search by capacity
@@ -174,8 +176,8 @@ const RestaurantHeader: React.FC<RestaurantHeaderProps> = ({
       }
 
       // Search by utility-specific properties
-      if (!item.type.startsWith('table-') && item.type !== 'room') {
-        const utilityItem = item as Extract<LayoutItem, { type: 'washroom' | 'counter' | 'entry-gate' | 'exit-gate' | 'elevator' | 'stair' }>;
+      if (!item.type.startsWith('table_') && item.type !== 'room') {
+        const utilityItem = item as Extract<LayoutItem, { type: 'washroom' | 'counter' | 'entry_gate' | 'exit_gate' | 'elevator' | 'stair' }>;
         // Search by name
         if (utilityItem.name?.toLowerCase().includes(searchTerm)) return true;
         // Search by description
@@ -195,8 +197,8 @@ const RestaurantHeader: React.FC<RestaurantHeaderProps> = ({
 
   // Helper function to get item display info
   const getItemDisplayInfo = useCallback((item: LayoutItem) => {
-    if (item.type.startsWith('table-')) {
-      const tableItem = item as Extract<LayoutItem, { type: `table-${string}` }>;
+    if (item.type.startsWith('table_')) {
+      const tableItem = item as Extract<LayoutItem, { type: `table_${string}` }>;
       return {
         title: `Table ${tableItem.tableNumber}`,
         subtitle: `${tableItem.capacity} seats • ${tableItem.status}`,
@@ -220,7 +222,7 @@ const RestaurantHeader: React.FC<RestaurantHeaderProps> = ({
     }
 
     // Utility items
-    const utilityItem = item as Extract<LayoutItem, { type: 'washroom' | 'counter' | 'entry-gate' | 'exit-gate' | 'elevator' | 'stair' }>;
+    const utilityItem = item as Extract<LayoutItem, { type: 'washroom' | 'counter' | 'entry_gate' | 'exit_gate' | 'elevator' | 'stair' }>;
     return {
       title: utilityItem.name || item.type.replace('-', ' '),
       subtitle: utilityItem.description || `${item.type} utility`,
@@ -507,7 +509,7 @@ const RestaurantHeader: React.FC<RestaurantHeaderProps> = ({
                 <Avatar className="h-6 w-6 border border-amber-300/50">
                   <AvatarImage src={userData.avatar} alt={userData.name} />
                   <AvatarFallback className="bg-gradient-to-br from-amber-500 to-orange-600 text-white text-xs">
-                    {userData.name.charAt(0)}
+                    {userData.name?.charAt(0)}
                   </AvatarFallback>
                 </Avatar>
                 <span className="hidden md:inline-block text-sm font-medium text-amber-900">
@@ -542,7 +544,7 @@ const RestaurantHeader: React.FC<RestaurantHeaderProps> = ({
                 <span>Support</span>
               </DropdownMenuItem>
               <DropdownMenuSeparator className="bg-amber-100" />
-              <DropdownMenuItem className="text-amber-800 focus:bg-amber-50 focus:text-amber-900">
+              <DropdownMenuItem onClick={signOut} className="text-amber-800 focus:bg-amber-50 focus:text-amber-900">
                 <LogOut className="mr-2 h-4 w-4 text-amber-600" />
                 <span>Log out</span>
               </DropdownMenuItem>

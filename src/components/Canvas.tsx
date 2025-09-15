@@ -33,21 +33,22 @@ import { useLayoutItemManager } from '../hooks/useLayoutItemManager';
 import { useResponsiveCanvas } from '../hooks/useResponsiveCanvas';
 import { constrainCenteredItem, calculateAutoFit, constrainTopLeftItem, generateItemNumber } from '../utils/canvasUtils';
 import { LayoutItem, RoomItem, TableItem, UtilityItem } from "@/types/restaurant";
+import { useFloors } from "@/hooks/useFloor";
 
 // Helper function to determine capacity based on component type
 const getCapacityFromComponentType = (componentType: string): number => {
   switch (componentType) {
-    case "table-2":
+    case "table_2":
       return 2;
-    case "table-4":
+    case "table_4":
       return 4;
-    case "table-6":
+    case "table_6":
       return 6;
-    case "table-8":
+    case "table_8":
       return 8;
-    case "table-10":
+    case "table_10":
       return 10;
-    case "table-12":
+    case "table_12":
       return 12;
     default:
       return 4;
@@ -56,11 +57,11 @@ const getCapacityFromComponentType = (componentType: string): number => {
 
 // Type guard functions
 const isTableItem = (item: LayoutItem): item is TableItem => {
-  return ['table-2', 'table-4', 'table-6', 'table-8', "table-10", 'table-12'].includes(item.type);
+  return ['table_2', 'table_4', 'table_6', 'table_8', "table_10", 'table_12'].includes(item.type);
 };
 
 const isUtilityItem = (item: LayoutItem): item is UtilityItem => {
-  return ['washroom', 'counter', 'entry-gate', 'exit-gate', 'elevator', 'stair'].includes(item.type);
+  return ['washroom', 'counter', 'entry_gate', 'exit_gate', 'elevator', 'stair'].includes(item.type);
 };
 
 const isRoomItem = (item: LayoutItem): item is RoomItem => {
@@ -77,6 +78,7 @@ const getRoomId = (item: LayoutItem): string | undefined => {
 export default function RestaurantCanvas({ width, height, onTouchDropReady }: CanvasProps) {
   const { state, dispatch, getCurrentFloorItems, toggleFloorLock, getItemsInRoom } = useRestaurant();
   const stageRef = useRef<any>(null);
+  const { acquireFloorLock, releaseFloorLock, isLocking } = useFloors(state.layout.id);
 
   // Responsive canvas hook
   const { getResponsiveHeaderHeight } = useResponsiveCanvas({ width, height });
@@ -155,7 +157,7 @@ export default function RestaurantCanvas({ width, height, onTouchDropReady }: Ca
   }), [viewState, width, height, headerHeight]);
 
   // Item visibility
-   const isLayoutItemVisible = useCallback((item: LayoutItem) => {
+  const isLayoutItemVisible = useCallback((item: LayoutItem) => {
     const buffer = 150 * (1 / viewState.scale);
     return (
       item.x + item.width > viewport.x - buffer &&
@@ -298,7 +300,7 @@ export default function RestaurantCanvas({ width, height, onTouchDropReady }: Ca
 
     let newItem: Omit<LayoutItem, "id">;
 
-    if (itemType.startsWith("table-")) {
+    if (itemType.startsWith("table_")) {
       newItem = {
         type: itemType as TableItem['type'],
         x: finalPosition.x,
@@ -508,6 +510,25 @@ export default function RestaurantCanvas({ width, height, onTouchDropReady }: Ca
     }
   }, [onTouchDropReady, handleTouchDrop]);
 
+
+  const handleFloorLockToggle = useCallback(async () => {
+    try {
+      const floorId = state.layout.floor.id;
+      if (!floorId) return;
+
+      if (isLocked) {
+        await acquireFloorLock(floorId);
+      } else {
+        await releaseFloorLock(floorId);
+      }
+
+      toggleFloorLock(!isLocked);
+    } catch (error) {
+      console.error("Error toggling floor lock:", error);
+      toggleFloorLock(true);
+    }
+  }, [isLocked, state.layout.floor.id, toggleFloorLock]);
+
   return (
     <PerformanceContext.Provider value={performanceContextValue}>
       <motion.div
@@ -527,7 +548,8 @@ export default function RestaurantCanvas({ width, height, onTouchDropReady }: Ca
           itemsCount={mutableItems.length}
           visibleItemsCount={mutableItems.filter(isLayoutItemVisible).length}
           isLocked={isLocked}
-          onToggleLock={() => toggleFloorLock(!isLocked)}
+          onToggleLock={handleFloorLockToggle}
+          isLocking={isLocking(state.layout.floor.id)}
           showSettings={showSettings}
           onToggleSettings={() => setShowSettings(!showSettings)}
         />

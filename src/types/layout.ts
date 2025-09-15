@@ -1,6 +1,7 @@
 import { Floor, LayoutItem } from "./restaurant";
 
 export type LayoutAction =
+    | { type: "INIT"; payload: { name: string, id: string } }
     // --- ITEM CRUD (works for TableItem, UtilityItem, RoomItem) ---
     | { type: "ADD_ITEM"; payload: { item: Omit<LayoutItem, "id">; roomId?: string } }
     | { type: "UPDATE_ITEM"; payload: { itemId: string; updates: Partial<LayoutItem> } }
@@ -29,7 +30,7 @@ export type LayoutAction =
 
     // --- SAVE & CHANGE TRACKING ---
     | { type: "SET_SAVING"; payload: { isSaving: boolean } }
-    | { type: "SET_ORIGINAL_FLOOR_DATA"; payload: { floorData: Floor | null } }
+    | { type: "SET_ORIGINAL_FLOOR_DATA"; payload: { floorData: Floor } }
     | { type: "SET_UNSAVED_CHANGES"; payload: { hasUnsavedChanges: boolean } }
     | { type: "RESET_UNSAVED_CHANGES" }
 

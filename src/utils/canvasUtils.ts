@@ -107,7 +107,7 @@ export const generateItemNumber = (
     existingItems: LayoutItem[],
     roomId?: string
 ): string => {
-    const diningTableTypes = ["table-2", "table-4", "table-6", "table-8", "table-10", "table-12"];
+    const diningTableTypes = ["table_2", "table_4", "table_6", "table_8", "table_10", "table_12"];
 
     // Filter items by scope (room-aware if roomId provided)
     const scopedItems = existingItems.filter(item =>
@@ -116,7 +116,7 @@ export const generateItemNumber = (
 
     // Helper function to get item identifier based on type
     const getItemIdentifier = (item: LayoutItem): string => {
-        if (item.type.startsWith("table-")) {
+        if (item.type.startsWith("table_")) {
             return (item as TableItem).tableNumber;
         } else if (item.type === "room") {
             return (item as RoomItem).name;
@@ -160,11 +160,11 @@ export const generateItemNumber = (
             const nextNumber = getNextNumber(sameTypeItems, "C");
             return `C${nextNumber}`;
         }
-        case "entry-gate": {
+        case "entry_gate": {
             const nextNumber = getNextNumber(sameTypeItems, "ENTRY");
             return `ENTRY${nextNumber}`;
         }
-        case "exit-gate": {
+        case "exit_gate": {
             const nextNumber = getNextNumber(sameTypeItems, "EXIT");
             return `EXIT${nextNumber}`;
         }

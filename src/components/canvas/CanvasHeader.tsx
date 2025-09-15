@@ -20,6 +20,7 @@ const CanvasHeader: React.FC<HeaderProps> = ({
     visibleItemsCount,
     isLocked,
     onToggleLock,
+    isLocking,
     showSettings,
     onToggleSettings
 }) => {
@@ -107,7 +108,7 @@ const CanvasHeader: React.FC<HeaderProps> = ({
                     </motion.div>
                 </motion.div>
 
-                <LockButton isLocked={isLocked} onToggle={onToggleLock} />
+                <LockButton isLocked={isLocked} isLocking={isLocking} onToggle={onToggleLock} />
 
                 <motion.button
                     onClick={onToggleSettings}

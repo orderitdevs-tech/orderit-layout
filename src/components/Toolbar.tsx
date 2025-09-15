@@ -135,7 +135,8 @@ export default function Toolbar({ onTouchDrop }: ToolbarProps) {
     addFloor,
     saveCurrentFloorToBackend,
     importLayout,
-    exportLayout
+    exportLayout,
+    
   } = useRestaurant();
 
   const { isDragging, dragPreview, handleTouchStart, handleTouchMove, handleTouchEnd } =
@@ -164,15 +165,8 @@ export default function Toolbar({ onTouchDrop }: ToolbarProps) {
 
   // Function to handle adding a new floor
   const handleAddFloor = async (name: string) => {
-
     try {
       await addFloor(name);
-
-      // Switch to the new floor after creation
-      const newFloor = state.availableFloors[state.availableFloors.length - 1];
-      if (newFloor) {
-        await switchFloor(newFloor.id);
-      }
     } catch (error) {
       console.error("Failed to add floor:", error);
     }

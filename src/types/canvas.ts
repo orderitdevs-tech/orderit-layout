@@ -68,6 +68,7 @@ export interface HeaderProps {
     visibleItemsCount: number;
     isLocked: boolean;
     onToggleLock: () => void;
+    isLocking:boolean;
     showSettings: boolean;
     onToggleSettings: () => void;
 }
@@ -75,4 +76,5 @@ export interface HeaderProps {
 export interface LockButtonProps {
     isLocked: boolean;
     onToggle: () => void;
+    isLocking:boolean;
 }

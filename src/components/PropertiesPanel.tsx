@@ -70,7 +70,7 @@ const statusConfig = {
     description: "Under repair",
     color: "bg-amber-500/10 text-amber-600 border-amber-200 hover:bg-amber-500/20"
   },
-  "out-of-service": {
+  "out_of_service": {
     icon: XCircle,
     label: "Out of Service",
     description: "Unavailable",
@@ -91,13 +91,13 @@ const areaTypeConfig = {
 };
 
 const getItemIcon = (type: string) => {
-  if (type.startsWith("table-")) return Users;
+  if (type.startsWith("table_")) return Users;
   if (type === "room") return Home;
   switch (type) {
     case "washroom": return WashingMachine;
     case "counter": return Coffee;
-    case "entry-gate": return LogIn;
-    case "exit-gate": return LogOut;
+    case "entry_gate": return LogIn;
+    case "exit_gate": return LogOut;
     case "elevator": return GiElevator;
     case "stair": return Gi3dStairs;
     default: return Users;
@@ -105,8 +105,8 @@ const getItemIcon = (type: string) => {
 };
 
 const getItemDisplayName = (item: LayoutItem) => {
-  if (item.type.startsWith("table-")) {
-    const seats = item.type.replace("table-", "");
+  if (item.type.startsWith("table_")) {
+    const seats = item.type.replace("table_", "");
     return `${seats} Seater Table`;
   }
   if (item.type === "room") {
@@ -116,8 +116,8 @@ const getItemDisplayName = (item: LayoutItem) => {
   switch (item.type) {
     case "washroom": return "Washroom";
     case "counter": return "Service Counter";
-    case "entry-gate": return "Entry Gate";
-    case "exit-gate": return "Exit Gate";
+    case "entry_gate": return "Entry Gate";
+    case "exit_gate": return "Exit Gate";
     case "elevator": return "Elevator";
     case "stair": return "Staircase";
     default: return item.type;
@@ -172,7 +172,7 @@ export default function PropertiesPanel() {
   useEffect(() => {
     if (selectedItem) {
       // Handle different item types
-      if (selectedItem.type.startsWith("table-")) {
+      if (selectedItem.type.startsWith("table_")) {
         const tableItem = selectedItem as TableItem;
         setFormData({
           tableNumber: tableItem.tableNumber || "",
@@ -215,7 +215,7 @@ export default function PropertiesPanel() {
     // Check for duplicates
     const isDuplicate = state.layout.floor.layoutItems.some(item =>
       item.id !== selectedItem?.id &&
-      item.type.startsWith("table-") &&
+      item.type.startsWith("table_") &&
       (item as TableItem).tableNumber === value
     );
 
@@ -249,7 +249,7 @@ export default function PropertiesPanel() {
     // Check for duplicates
     const isDuplicate = state.layout.floor.layoutItems.some(item =>
       item.id !== selectedItem?.id &&
-      !item.type.startsWith("table-") &&
+      !item.type.startsWith("table_") &&
       item.type !== "room" &&
       (item as UtilityItem).name?.toLowerCase().trim() === value.toLowerCase().trim()
     );
@@ -344,7 +344,7 @@ export default function PropertiesPanel() {
   const handleStatusChange = (status: SeatingStatus) => {
     if (!selectedItem) return;
 
-    const isTable = selectedItem.type.startsWith("table-");
+    const isTable = selectedItem.type.startsWith("table_");
     const isArea = selectedItem.type === "room";
 
     if (!isTable && !isArea) return;
@@ -390,7 +390,7 @@ export default function PropertiesPanel() {
       const areaItem = selectedItem as RoomItem;
       areaItem.containedItems.forEach(containedItemId => {
         const containedItem = getItemById(containedItemId);
-        if (containedItem && containedItem.type.startsWith("table-")) {
+        if (containedItem && containedItem.type.startsWith("table_")) {
           // Only change table status if new area status is more restrictive or same
           const currentTableStatus = (containedItem as TableItem).status;
           const restrictiveOrder = ["available", "reserved", "occupied", "maintenance", "out-of-service"];
@@ -448,7 +448,7 @@ export default function PropertiesPanel() {
     });
   };
 
-  const isTable = selectedItem?.type.startsWith("table-");
+  const isTable = selectedItem?.type.startsWith("table_");
   const isArea = selectedItem?.type === "room";
   const ItemIcon = selectedItem ? getItemIcon(selectedItem.type) : Users;
 
@@ -489,7 +489,7 @@ export default function PropertiesPanel() {
     "occupied",
     "reserved",
     "maintenance",
-    "out-of-service"
+    "out_of_service"
   ];
 
   const areaTypes: RoomType[] = [
@@ -620,7 +620,7 @@ export default function PropertiesPanel() {
                         <span className="text-sm font-medium">{getItemDisplayName(selectedItem)}</span>
                         <Badge variant="secondary" className="ml-auto">
                           {isTable
-                            ? `${selectedItem.type.replace("table-", "")} seats`
+                            ? `${selectedItem.type.replace("table_", "")} seats`
                             : isArea
                               ? "Area"
                               : "Utility"

@@ -1,11 +1,11 @@
 // components/LockButton.tsx
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Lock, Unlock } from 'lucide-react';
+import { Loader2, Lock, Unlock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { LockButtonProps } from '../types/canvas';
 
-const LockButton: React.FC<LockButtonProps> = ({ isLocked, onToggle }) => {
+const LockButton: React.FC<LockButtonProps> = ({ isLocked, onToggle, isLocking }) => {
     return (
         <motion.div
             initial={{ scale: 0.9 }}
@@ -25,13 +25,17 @@ const LockButton: React.FC<LockButtonProps> = ({ isLocked, onToggle }) => {
                     }
         `}
             >
-                <motion.div
-                    animate={{ rotate: isLocked ? 0 : 180 }}
-                    transition={{ duration: 0.3 }}
-                >
-                    {isLocked ? <Lock className="h-4 w-4" /> : <Unlock className="h-4 w-4" />}
-                </motion.div>
-                <span>{isLocked ? 'Locked' : 'Unlocked'}</span>
+                {isLocking ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                    <motion.div
+                        animate={{ rotate: isLocked ? 0 : 180 }}
+                        transition={{ duration: 0.3 }}
+                    >
+                        {isLocked ? <Lock className="h-4 w-4" /> : <Unlock className="h-4 w-4" />}
+                    </motion.div>
+                )}
+                <span>{isLocking ? 'Processing...' : isLocked ? 'Locked' : 'Unlocked'}</span>
             </Button>
         </motion.div>
     );
