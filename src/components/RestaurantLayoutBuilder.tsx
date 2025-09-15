@@ -83,9 +83,9 @@ function RestaurantLayoutContent() {
             });
           }}
           userData={{
-            name:  user?.name!,
-            email: user?.email!,
-            role: user?.role!,
+            name: user?.name || "User Name",
+            email: user?.email || "user@example.com",
+            role: user?.role || "Manager",
           }}
           notifications={[
             {

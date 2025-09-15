@@ -751,7 +751,7 @@ export function RestaurantProvider({ children, restaurantId }: { children: React
     });
 
     fetchAvailableFloors();
-  }, [createAsyncOperation, loadFloorData]);
+  }, [createAsyncOperation, loadFloorData, fetchFloors]);
 
   useEffect(() => {
     let isCurrent = true;
@@ -782,7 +782,7 @@ export function RestaurantProvider({ children, restaurantId }: { children: React
     return () => {
       isCurrent = false;
     };
-  }, [state.currentFloorId, state.layout.floor.id]);
+  }, [state.currentFloorId, state.layout.floor.id, fetchFloorLayout]);
 
   // ==================== CONTEXT VALUE ====================
   const contextValue = useMemo((): RestaurantContextValue => ({

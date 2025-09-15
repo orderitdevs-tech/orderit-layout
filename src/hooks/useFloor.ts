@@ -135,7 +135,7 @@ export const useFloors = (restaurantId: string) => {
         } finally {
             setLoading(false);
         }
-    }, [restaurantId, api, toast]);
+    }, [restaurantId, api]);
 
     // Fetch floor layout
     const fetchFloorLayout = useCallback(async (floorId: string): Promise<Floor> => {
@@ -165,7 +165,7 @@ export const useFloors = (restaurantId: string) => {
         } finally {
             setLoading(false);
         }
-    }, [restaurantId, api, toast]);
+    }, [restaurantId, api]);
 
     // Create floor
     const createFloor = useCallback(async (data: CreateFloorData): Promise<FloorListItem> => {
@@ -198,7 +198,7 @@ export const useFloors = (restaurantId: string) => {
 
             throw err;
         }
-    }, [restaurantId, api, toast]);
+    }, [restaurantId, api]);
 
     // Delete floor
     const deleteFloor = useCallback(async (floorId: string): Promise<void> => {
@@ -239,7 +239,7 @@ export const useFloors = (restaurantId: string) => {
             toast.error(errorMessage);
             throw err;
         }
-    }, [restaurantId, api, toast]);
+    }, [restaurantId, api]);
 
     // Acquire floor lock
     const acquireFloorLock = useCallback(async (floorId: string): Promise<LockResponse> => {
@@ -281,7 +281,7 @@ export const useFloors = (restaurantId: string) => {
 
             throw err;
         }
-    }, [restaurantId, api, toast]);
+    }, [restaurantId, api]);
 
     // Release floor lock
     const releaseFloorLock = useCallback(async (floorId: string): Promise<void> => {
@@ -321,7 +321,7 @@ export const useFloors = (restaurantId: string) => {
 
             throw err;
         }
-    }, [restaurantId, api, toast]);
+    }, [restaurantId, api]);
 
     // Save floor layout
     const saveFloorLayout = useCallback(async (floorId: string, data: FloorSaveRequest): Promise<SaveResponse> => {
@@ -366,7 +366,7 @@ export const useFloors = (restaurantId: string) => {
 
             throw err;
         }
-    }, [restaurantId, api, toast]);
+    }, [restaurantId, api]);
 
 
     // Helper functions for checking states

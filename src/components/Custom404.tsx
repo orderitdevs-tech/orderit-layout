@@ -3,7 +3,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Home, ArrowLeft, Sparkles, Navigation, Compass } from 'lucide-react';
+import { ArrowLeft, Sparkles, Navigation, Compass } from 'lucide-react';
 
 const Custom404 = () => {
     const containerVariants = {
@@ -174,8 +174,8 @@ const Custom404 = () => {
                                 Lost in the Digital Cosmos
                             </h2>
                             <p className="text-lg text-gray-600 dark:text-gray-300 max-w-md mx-auto leading-relaxed">
-                                The page you're seeking has embarked on an interstellar journey. 
-                                While we track it down, let's get you back to familiar space.
+                                {`The page you're seeking has embarked on an interstellar journey. 
+                                While we track it down, let's get you back to familiar space.`}
                             </p>
                         </motion.div>
 

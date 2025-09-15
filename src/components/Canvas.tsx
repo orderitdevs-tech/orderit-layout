@@ -527,7 +527,7 @@ export default function RestaurantCanvas({ width, height, onTouchDropReady }: Ca
       console.error("Error toggling floor lock:", error);
       toggleFloorLock(true);
     }
-  }, [isLocked, state.layout.floor.id, toggleFloorLock]);
+  }, [isLocked, state.layout.floor.id, toggleFloorLock, acquireFloorLock, releaseFloorLock]);
 
   return (
     <PerformanceContext.Provider value={performanceContextValue}>
